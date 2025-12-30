@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/tcp_client.dir/link.d CMakeFiles/tcp_client.dir/tcp_client.cpp.o CMakeFiles/tcp_client.dir/tcp_client_func.cpp.o -o tcp_client  -lpthread
