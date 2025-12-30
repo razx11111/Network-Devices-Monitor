@@ -1,3 +1,8 @@
 /.vscode
 /cmake_install.cmake
 /CmakeFiles
+/tcp_server
+/tcp_user
+/udp_server
+/compiler.sh
+/SQLite_manager
