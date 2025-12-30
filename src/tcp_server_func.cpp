@@ -15,8 +15,18 @@
 #include "SQLite_manager.h"
 
 extern SQLiteManager* g_db_manager;
-
+vector<int> dashboard_sockets;
 pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t dlock = PTHREAD_MUTEX_INITIALIZER;
+
+void broadcast_to_dashboards(string jsonLog) {
+    pthread_mutex_lock(&dlock);
+    // Loop through all dashboards and send the log
+    for (int i = 0; i < dashboard_sockets.size(); i++) {
+        send(dashboard_sockets[i], jsonLog.c_str(), jsonLog.size(), 0); 
+    }
+    pthread_mutex_unlock(&dlock);
+}
 
 static string extract_field(const string& json, const string& key) {
     const string pattern = "\"" + key + "\":";
@@ -104,6 +114,7 @@ void raspunde(void *arg) {
                     
                     cout << "[Thread " << tdL.idThread << "] Log inserted with ID: " << log_id << endl;
                 }
+                broadcast_to_dashboards(payloadStr); 
                 responseMsg = "{\"status\":\"ok\",\"cmd\":\"LOG_DATA\"}";
                 break;
             case CMD_HEARTBEAT:

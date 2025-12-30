@@ -34,10 +34,13 @@ int main() {
     // UDP Syslog server in thread separat
     g_udp_server = new UDPSyslogServer(5140);  // Port 5140 (non-privileged) pentru testare
     
-    g_udp_server->set_message_handler([](const std::string& msg, const std::string& ip) {
-        // Parse și salvează în DB
-        // (poți crea o funcție parse_and_save_syslog)
-    });
+    g_udp_server->set_message_handler([](string ts, string host, string sev, string app, string msg) {
+    if (g_db_manager) {
+        // Insert into DB. Source type is "syslog"
+        g_db_manager->insert_log(ts, host, sev, app, msg, "0", "syslog");
+        cout << "[UDP] Log saved to DB from " << host << endl;
+    }
+    }); 
     if (!g_db_manager->init_database()) {
         cerr << "Failed to initialize database!" << endl;
         return 1;

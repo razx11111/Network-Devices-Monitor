@@ -4,20 +4,20 @@
 #include <string>
 #include <functional>
 
+using SyslogHandler = std::function<void(std::string, std::string, std::string, std::string, std::string)>;
+
 class UDPSyslogServer {
 private:
     int socket_fd;
     int port;
     bool running;
-    
-    // Callback pentru procesare mesaj
-    std::function<void(const std::string&, const std::string&)> message_handler;
-    
+    SyslogHandler message_handler;
+       
 public:
     UDPSyslogServer(int port);
     ~UDPSyslogServer();
     
-    void set_message_handler(std::function<void(const std::string&, const std::string&)> handler);
+    void set_message_handler(SyslogHandler handler);
     void start();
     void stop();
     
