@@ -21,8 +21,7 @@ UDPSyslogServer::~UDPSyslogServer() {
     }
 }
 
-void UDPSyslogServer::set_message_handler(
-    std::function<void(const std::string&, const std::string&)> handler) {
+void UDPSyslogServer::set_message_handler(SyslogHandler handler) {
     message_handler = handler;
 }
 
@@ -83,7 +82,6 @@ void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& 
         std::string tag = matches[4];
         std::string message = matches[5];
         
-        // Map severity number to string
         const char* severity_names[] = {
             "EMERGENCY", "ALERT", "CRITICAL", "ERROR", 
             "WARNING", "NOTICE", "INFO", "DEBUG"
@@ -94,9 +92,10 @@ void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& 
         
         // Call handler cu datele parsate
         if (message_handler) {
-            message_handler(raw_message, source_ip);
+            message_handler(timestamp, hostname, severity_str, tag, message);
         }
         
+
         // Aici salvezi în database (vezi mai jos)
     } else {
         std::cout << "[UDP] Could not parse syslog: " << raw_message << std::endl;

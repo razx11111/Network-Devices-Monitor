@@ -1,0 +1,4 @@
+/home/razvan/Documents/NetworkDevicesManager/CMakeFiles/tcp_server.dir
+/home/razvan/Documents/NetworkDevicesManager/CMakeFiles/tcp_client.dir
+/home/razvan/Documents/NetworkDevicesManager/CMakeFiles/edit_cache.dir
+/home/razvan/Documents/NetworkDevicesManager/CMakeFiles/rebuild_cache.dir

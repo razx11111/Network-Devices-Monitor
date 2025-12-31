@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/tcp_server.dir/link.d CMakeFiles/tcp_server.dir/tcp_server.cpp.o CMakeFiles/tcp_server.dir/tcp_server_func.cpp.o CMakeFiles/tcp_server.dir/SQLite_manager.cpp.o -o tcp_server  -lpthread /usr/lib/x86_64-linux-gnu/libsqlite3.so

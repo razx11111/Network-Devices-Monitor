@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # --- 1. The Central Server ---
+  monitor-server:
+    build: .                 # Build using the Dockerfile in current dir
+    container_name: monitor-server
+    ports:
+      - "9999:9999"          # Expose TCP port for Agents/Dashboard
+      - "514:514/udp"        # Expose UDP port for Legacy Routers
+    # The default command in Dockerfile runs the server, so we don't need to specify it here.
+
+  # --- 2. The C++ Agent (Simulation) ---
+  agent-01:
+    build: .
+    container_name: agent-01
+    depends_on:
+      - monitor-server
+    # Override the command to run the CLIENT instead of the server
+    # We pass 'monitor-server' as the IP argument (Docker DNS resolves this name)
+    command: ["./build/tcp_client", "monitor-server"]
+
+  # --- 3. The Legacy Router (UDP Simulation) ---
+  legacy-router:
+    image: alpine:latest
+    container_name: legacy-router
+    depends_on:
+      - monitor-server
+    # Install netcat and run a loop sending Syslog RFC 5424 messages every 5 seconds
+    command: >
+      sh -c "apk add --no-cache netcat-openbsd &&
+             while true; do
+               echo '<34>1 2025-02-14T12:00:00Z router-core Interface eth0 DOWN' | nc -u -w 1 monitor-server 514;
+               echo '[UDP-Router] Sent log packet';
+               sleep 5;
+             done"
+
+networks:
+  default:
+    driver: bridge

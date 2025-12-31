@@ -9,6 +9,7 @@ add_executable(tcp_server
     tcp_server.cpp
     tcp_server_func.cpp
     SQLite_manager.cpp
+    udp_server.cpp
 )
 
 target_link_libraries(tcp_server pthread SQLite::SQLite3)
