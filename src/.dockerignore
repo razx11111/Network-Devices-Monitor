@@ -1,5 +1,16 @@
+# Ignore CMake build artifacts
 build/
-CMakeCache.txt
 CMakeFiles/
+CMakeCache.txt
 cmake_install.cmake
 Makefile
+*.a
+*.so
+compile_commands.json
+
+# Ignore IDE files
+.vscode/
+
+# Ignore git files
+.git/
+.gitignore

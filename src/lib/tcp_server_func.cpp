@@ -29,18 +29,18 @@ void broadcast_to_dashboards(string jsonLog) {
 }
 
 static string extract_field(const string& json, const string& key) {
-    const string pattern = "\"" + key + "\":";
+    const string pattern = "\"" + key + ":";
     auto pos = json.find(pattern);
     if (pos == string::npos) return "";
     pos += pattern.size();
 
-    while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\"')) {
-        if (json[pos] == '\"') { pos++; break; }
+    while (pos < json.size() && (json[pos] == ' ' || json[pos] == '"')) {
+        if (json[pos] == '"') { pos++; break; }
         pos++;
     }
 
     string value;
-    while (pos < json.size() && json[pos] != '\"') {
+    while (pos < json.size() && json[pos] != '"') {
         value.push_back(json[pos]);
         pos++;
     }

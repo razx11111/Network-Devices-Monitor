@@ -1,7 +1,0 @@
-FROM alpine:latest
-
-# Alpine has syslogd built-in. We just need a command to start it.
-# -n = run in foreground
-# -O /dev/stdout = print to docker logs too (optional)
-# -R monitor-server:514 = Remote Log Destination (THIS IS THE KEY)
-CMD syslogd -n -O /dev/stdout -R monitor-server:514
