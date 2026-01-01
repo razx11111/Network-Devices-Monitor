@@ -1,0 +1,30 @@
+services:
+  monitor-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: monitor-server
+    ports:
+      - "9999:9999"
+      - "514:514/udp"
+
+  # DEVICE 1: Ubuntu Server (Generates Auth & Cron logs)
+  device-firewall-01:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ubuntu-syslog
+    depends_on:
+      - monitor-server
+    # Generate a real "native" log by forcing a cron job every minute
+    command: >
+      bash -c "rsyslogd && 
+               (crontab -l 2>/dev/null; echo '* * * * * logger \"[CRON-JOB] System check completed\"') | crontab - &&
+               cron -f"
+
+  # DEVICE 2: Core Router (Alpine/BusyBox)
+  device-router-core:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.alpine-syslog
+    depends_on:
+      - monitor-server

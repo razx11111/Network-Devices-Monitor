@@ -1,0 +1,35 @@
+# Use Ubuntu 24.04 as the base OS
+FROM ubuntu:24.04
+
+# Avoid timezone prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    sqlite3 \
+    pkg-config \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy source code files into the container
+COPY . .
+
+# Clean up any host build artifacts that were copied
+RUN rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake Makefile
+
+
+# Create a build directory and compile the project
+RUN set -x && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make
+
+# By default, run the server (can be overridden in docker-compose)
+CMD ["./build/tcp_server"]
