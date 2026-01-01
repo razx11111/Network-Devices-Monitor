@@ -66,9 +66,8 @@ void UDPSyslogServer::stop() {
 }
 
 void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& source_ip) {
-    // Ex: <34>Nov 28 12:00:01 router01 LINK-3-UPDOWN: Interface GigabitEthernet0/1 up
     
-    std::regex syslog_rfc5424(R"(^<(\d|\d{2}|1[1-8]\d|19[01])>(\d{1,2})\s(-|([12]\d{3})-(0\d|1[012])-([012]\d|3[01])T([01]\d|2[0-4]):([0-5]\d):([0-5]\d|60)(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2}))\s([\S]{1,255})\s([\S]{1,48})\s([\S]{1,128})\s([\S]{1,32})\s(-|(?:\[.+?(?<!\\)\])+)(?:\s(.+))?$)"); //credite catre un tip de pe regex101.com
+    std::regex syslog_rfc5424(R"(^<(\d|\d{2}|1[1-8]\d|19[01])>(\d{1,2})\s(-|([12]\d{3})-(0\d|1[012])-([012]\d|3[01])T([01]\d|2[0-4]):([0-5]\d):([0-5]\d|60)(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2}))\s([\S]{1,255})\s([\S]{1,48})\s([\S]{1,128})\s([\S]{1,32})\s(-|(?:\[(?:[^\]\\]|\\.)*\])+)(?:\s(.+))?$)"); //credite catre un tip de pe regex101.com
     std::regex syslog_rfc3164(R"(<(\d+)>(\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+(\S+):\s*(.+))");
     std::smatch matches;
 

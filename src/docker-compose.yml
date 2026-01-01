@@ -17,7 +17,7 @@ services:
       - monitor-server
     # Generate a real "native" log by forcing a cron job every minute
     command: >
-      bash -c "service rsyslog start && 
+      bash -c "rsyslogd && 
                (crontab -l 2>/dev/null; echo '* * * * * logger \"[CRON-JOB] System check completed\"') | crontab - &&
                cron -f"
 

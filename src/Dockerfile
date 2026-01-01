@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
+    sqlite3 \
     pkg-config \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -17,7 +18,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy source code files into the container
-
 COPY . .
 
 # Create a build directory and compile the project

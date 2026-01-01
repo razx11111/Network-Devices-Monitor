@@ -32,7 +32,7 @@ int main() {
     g_db_manager->init_database();
     
     // UDP Syslog server in thread separat
-    g_udp_server = new UDPSyslogServer(5140);  // Port 5140 (non-privileged) pentru testare
+    g_udp_server = new UDPSyslogServer(514); 
     
     g_udp_server->set_message_handler([](string ts, string host, string sev, string app, string msg) {
     if (g_db_manager) {
