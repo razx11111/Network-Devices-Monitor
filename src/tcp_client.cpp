@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <netdb.h>
 #include "tcp_client_func.h"
 
 using namespace std;
@@ -29,9 +30,17 @@ int main(int  argc, char *argv[]) {
     memset(&server, 0, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
-    if (inet_pton(AF_INET, server_ip.c_str(), &server.sin_addr) != 1) {
-        perror("[client] Invalid server IP.\n");
-        return 1;
+    struct hostent *he;
+
+    if ((he = gethostbyname(server_ip.c_str())) == NULL) {
+        // If DNS fails, try to parse as direct IP
+        if (inet_pton(AF_INET, server_ip.c_str(), &server.sin_addr) <= 0) {
+            perror("[client] Invalid server IP or Hostname resolving failed.\n");
+            return 1;
+        }
+    } else {
+        // Copy the resolved IP from gethostbyname
+        memcpy(&server.sin_addr, he->h_addr_list[0], he->h_length);
     }
 
     if (connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1) {
@@ -45,7 +54,9 @@ int main(int  argc, char *argv[]) {
         cout << "Enter command (auth | log | hb | exit): ";
         
         string opt;
-        cin >> opt;
+        if (!(cin >> opt)) {
+            break; // Exit loop if no input is available
+        }
 
         string payload = "";
 

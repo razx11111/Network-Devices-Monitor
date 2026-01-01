@@ -1,0 +1,11 @@
+FROM ubuntu:22.04
+
+# Install rsyslog and cron (to generate some noise)
+RUN apt-get update && apt-get install -y rsyslog cron && rm -rf /var/lib/apt/lists/*
+
+# Configure rsyslog to forward ALL logs (*.*) to your server using UDP (@)
+# Format: *.* @<server_hostname>:<port>
+RUN echo "*.* @monitor-server:514" >> /etc/rsyslog.conf
+
+# Start rsyslog and cron in the foreground
+CMD service rsyslog start && cron -f

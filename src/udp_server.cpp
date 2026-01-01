@@ -66,38 +66,45 @@ void UDPSyslogServer::stop() {
 }
 
 void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& source_ip) {
-    // Parser simplu pentru RFC 3164: <PRI>TIMESTAMP HOSTNAME TAG: MESSAGE
     // Ex: <34>Nov 28 12:00:01 router01 LINK-3-UPDOWN: Interface GigabitEthernet0/1 up
     
-    std::regex syslog_regex(R"(<(\d+)>(\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+(\S+):\s*(.+))");
+    std::regex syslog_rfc5424(R"(^<(\d|\d{2}|1[1-8]\d|19[01])>(\d{1,2})\s(-|([12]\d{3})-(0\d|1[012])-([012]\d|3[01])T([01]\d|2[0-4]):([0-5]\d):([0-5]\d|60)(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2}))\s([\S]{1,255})\s([\S]{1,48})\s([\S]{1,128})\s([\S]{1,32})\s(-|(?:\[.+?(?<!\\)\])+)(?:\s(.+))?$)"); //credite catre un tip de pe regex101.com
+    std::regex syslog_rfc3164(R"(<(\d+)>(\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+(\S+):\s*(.+))");
     std::smatch matches;
-    
-    if (std::regex_search(raw_message, matches, syslog_regex)) {
-        int priority = std::stoi(matches[1]);
-        int severity = priority & 0x07;  // Last 3 bits
-        int facility = priority >> 3;     // First 5 bits
-        
-        std::string timestamp = matches[2];
-        std::string hostname = matches[3];
-        std::string tag = matches[4];
-        std::string message = matches[5];
-        
-        const char* severity_names[] = {
+
+    const char* severity_names[] = {
             "EMERGENCY", "ALERT", "CRITICAL", "ERROR", 
             "WARNING", "NOTICE", "INFO", "DEBUG"
-        };
-        std::string severity_str = severity_names[severity];
-        
-        std::cout << "[UDP] " << hostname << " [" << severity_str << "] " << message << std::endl;
-        
-        // Call handler cu datele parsate
-        if (message_handler) {
-            message_handler(timestamp, hostname, severity_str, tag, message);
-        }
-        
+    };
 
-        // Aici salvezi în database (vezi mai jos)
-    } else {
-        std::cout << "[UDP] Could not parse syslog: " << raw_message << std::endl;
+    if (std::regex_search(raw_message, matches, syslog_rfc5424)) {
+        // Parse RFC 5424
+        int pri = std::stoi(matches[1]);
+        std::string severity = severity_names[pri & 0x07];
+        
+        std::string timestamp = matches[3];
+        std::string hostname  = matches[4];
+        std::string app_name  = matches[5]; 
+        std::string message   = matches[9].matched ? matches[9].str() : "";
+
+        if (message_handler) {
+            message_handler(timestamp, hostname, severity, app_name, message);
+        }
+        return;
+    }
+    
+    if (std::regex_search(raw_message, matches, syslog_rfc3164)) {
+        int pri = std::stoi(matches[1]);
+        std::string severity = severity_names[pri & 0x07];
+
+        std::string timestamp = matches[2];
+        std::string hostname  = matches[3];
+        std::string tag       = matches[4]; 
+        std::string message   = matches[5];
+
+        if (message_handler) {
+            message_handler(timestamp, hostname, severity, tag, message);
+        }
+        return;
     }
 }
