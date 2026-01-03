@@ -2,22 +2,84 @@
 #include <QHeaderView>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QtEndian> // For qToBigEndian / qFromBigEndian
+#include <QtEndian> 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();
 
     socket = new QTcpSocket(this);
+    reconnectTimer = new QTimer(this);
+
+    // Socket Signals
     connect(socket, &QTcpSocket::connected, this, &MainWindow::onConnected);
+    connect(socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected); // Handle server stopping
     connect(socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
-    connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::errorOccurred),
+    
+    // Note: We use a lambda for error to handle connection failures
+    connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::error),
             this, &MainWindow::onSocketError);
 
-    // Auto-connect on startup
-    connectToServer();
+    // Timer Signal
+    connect(reconnectTimer, &QTimer::timeout, this, &MainWindow::attemptConnection);
+
+    // Start trying immediately
+    attemptConnection();
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::attemptConnection() {
+    // Only try if we are not already connected or trying
+    if (socket->state() == QAbstractSocket::UnconnectedState) {
+        statusLabel->setText("Status: Searching for Server...");
+        statusLabel->setStyleSheet("font-weight: bold; color: orange; padding: 5px;");
+        
+        // Connect to localhost (Docker forwarded port)
+        socket->connectToHost("127.0.0.1", 9999);
+    }
+}
+
+void MainWindow::onConnected() {
+    // Stop the retry timer since we are in!
+    reconnectTimer->stop();
+
+    statusLabel->setText("Status: Connected (Live Stream)");
+    statusLabel->setStyleSheet("font-weight: bold; color: #00ff00; padding: 5px; background-color: #222;");
+
+    // --- SEND HANDSHAKE ---
+    QJsonObject authObj;
+    authObj["role"] = "ADMIN";
+    QJsonDocument doc(authObj);
+    QByteArray payload = doc.toJson(QJsonDocument::Compact);
+
+    AMPHeader header;
+    header.version = 1;
+    header.message_type = CMD_AUTH; // Use constant from protocol.h
+    header.reserved = 0;
+    header.payload_length = qToBigEndian((uint32_t)payload.size());
+
+    socket->write((char*)&header, sizeof(header));
+    socket->write(payload);
+}
+
+void MainWindow::onDisconnected() {
+    statusLabel->setText("Status: Disconnected. Retrying...");
+    statusLabel->setStyleSheet("font-weight: bold; color: red; padding: 5px;");
+    
+    // Server died? Start trying to reconnect immediately.
+    reconnectTimer->start(2000); // Retry every 2 seconds
+}
+
+void MainWindow::onSocketError(QAbstractSocket::SocketError socketError) {
+    // If we get a connection refused (Docker not up yet), just keep retrying
+    if (socket->state() == QAbstractSocket::UnconnectedState) {
+        if (!reconnectTimer->isActive()) {
+            reconnectTimer->start(2000); // Retry every 2 seconds
+        }
+    } else {
+        statusLabel->setText("Status: Error - " + socket->errorString());
+    }
+}
 
 void MainWindow::setupUI() {
     setWindowTitle("Network Devices Monitor - Admin Dashboard");

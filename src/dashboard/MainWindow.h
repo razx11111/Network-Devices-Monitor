@@ -5,9 +5,7 @@
 #include <QTcpSocket>
 #include <QTableWidget>
 #include <QLabel>
-#include <QVBoxLayout>
-
-// Include your shared protocol definition
+#include <QTimer> // <-- Add this
 #include "protocol.h"
 
 class MainWindow : public QMainWindow {
@@ -18,8 +16,9 @@ public:
     ~MainWindow();
 
 private slots:
-    void connectToServer();
+    void attemptConnection(); // Renamed from connectToServer
     void onConnected();
+    void onDisconnected();    // <-- Add this
     void onReadyRead();
     void onSocketError(QAbstractSocket::SocketError socketError);
 
@@ -29,9 +28,10 @@ private:
     void addLogEntry(const QString &ts, const QString &src, const QString &sev, const QString &app, const QString &msg);
 
     QTcpSocket *socket;
+    QTimer *reconnectTimer;   // <-- Add this
     QTableWidget *logTable;
     QLabel *statusLabel;
-    QByteArray buffer; // Handle TCP fragmentation
+    QByteArray buffer;
 };
 
 #endif // MAINWINDOW_H
