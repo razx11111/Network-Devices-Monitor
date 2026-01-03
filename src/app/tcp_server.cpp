@@ -29,18 +29,30 @@ int main() {
     int i = 0;
 
     g_db_manager = new SQLiteManager("network_monitor.db");
-    g_db_manager->init_database();
     
     // UDP Syslog server in thread separat
     g_udp_server = new UDPSyslogServer(514); 
     
     g_udp_server->set_message_handler([](string ts, string host, string sev, string app, string msg) {
-    if (g_db_manager) {
-        // Insert into DB. Source type is "syslog"
-        g_db_manager->insert_log(ts, host, sev, app, msg, "0", "syslog");
-        cout << "[UDP] Log saved to DB from " << host << endl;
-    }
-    }); 
+        if (g_db_manager) {
+            // 1. Insert into DB
+            g_db_manager->insert_log(ts, host, sev, app, msg, "0", "syslog");
+            cout << "[UDP] Log saved from " << host << endl;
+
+            // 2. Broadcast to Dashboard (Create JSON manually)
+            // Note: We need to match the JSON format the Dashboard expects
+            string jsonLog = "{";
+            jsonLog += "\"timestamp\":\"" + ts + "\",";
+            jsonLog += "\"hostname\":\"" + host + "\",";
+            jsonLog += "\"severity\":\"" + sev + "\",";
+            jsonLog += "\"application\":\"" + app + "\",";
+            jsonLog += "\"message\":\"" + msg + "\",";
+            jsonLog += "\"source\":\"UDP\""; 
+            jsonLog += "}";
+
+            broadcast_to_dashboards(jsonLog);
+        }
+    });
     if (!g_db_manager->init_database()) {
         cerr << "Failed to initialize database!" << endl;
         return 1;

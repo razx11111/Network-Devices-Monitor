@@ -1,7 +1,11 @@
 #ifndef TCP_SERVER_FUNC_H
 #define TCP_SERVER_FUNC_H
 
-using namespace std;
+#include <string>
+#include "protocol.h"
+
+// Expose this so main.cpp (UDP) can call it
+void broadcast_to_dashboards(std::string jsonLog);
 
 void *treat(void *arg);
 void raspunde(void *arg);

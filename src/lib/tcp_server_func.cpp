@@ -10,37 +10,62 @@
 #include <pthread.h>
 #include <iostream>
 #include <fstream>
+#include <algorithm> // Required for cleanup
+#include <vector>    // Required for vector
+
 #include "protocol.h"
 #include "tcp_server_func.h"
 #include "SQLite_manager.h"
 
+using namespace std;
+
 extern SQLiteManager* g_db_manager;
+
+// Global list of dashboard sockets
 vector<int> dashboard_sockets;
 pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t dlock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t dlock = PTHREAD_MUTEX_INITIALIZER; // Protects dashboard_sockets
 
+// Helper to safely send to all dashboards
 void broadcast_to_dashboards(string jsonLog) {
     pthread_mutex_lock(&dlock);
-    // Loop through all dashboards and send the log
-    for (int i = 0; i < dashboard_sockets.size(); i++) {
-        send(dashboard_sockets[i], jsonLog.c_str(), jsonLog.size(), 0); 
+
+    // Prepare a header for the log message
+    AMPHeader logHeader;
+    logHeader.version = 1;
+    logHeader.message_type = CMD_LOG;
+    logHeader.reserved = 0;
+    logHeader.payload_length = htonl(jsonLog.size());
+
+    // Loop through all dashboards and send the log (header + payload)
+    for (size_t i = 0; i < dashboard_sockets.size(); i++) {
+        // Use MSG_NOSIGNAL to avoid crashing if a dashboard closed the connection
+        send(dashboard_sockets[i], &logHeader, sizeof(logHeader), MSG_NOSIGNAL);
+        send(dashboard_sockets[i], jsonLog.c_str(), jsonLog.size(), MSG_NOSIGNAL);
     }
     pthread_mutex_unlock(&dlock);
 }
 
+// Helper: Extract JSON value manually (since we don't use a JSON lib here)
 static string extract_field(const string& json, const string& key) {
-    const string pattern = "\"" + key + ":";
+    const string pattern = "\"" + key + "\":"; // Look for "key":
     auto pos = json.find(pattern);
-    if (pos == string::npos) return "";
-    pos += pattern.size();
+    if (pos == string::npos) {
+        // Retry with space "key" :
+        pos = json.find("\"" + key + "\" :");
+        if (pos == string::npos) return "";
+    }
+    
+    // Move past the key and colon
+    pos = json.find(':', pos) + 1;
 
+    // Skip whitespace
     while (pos < json.size() && (json[pos] == ' ' || json[pos] == '"')) {
-        if (json[pos] == '"') { pos++; break; }
         pos++;
     }
 
     string value;
-    while (pos < json.size() && json[pos] != '"') {
+    while (pos < json.size() && json[pos] != '"' && json[pos] != '}' && json[pos] != ',') {
         value.push_back(json[pos]);
         pos++;
     }
@@ -50,12 +75,25 @@ static string extract_field(const string& json, const string& key) {
 void *treat(void *arg) {
     struct thData tdL;
     tdL = *((struct thData *)arg);
-    printf("[thread %d] Client connected. Waiting for commands...\n", tdL.idThread);
+    printf("[thread %d] Client connected.\n", tdL.idThread);
     fflush(stdout);
     pthread_detach(pthread_self());
     
     raspunde((struct thData *)arg);
     
+    // --- CLEANUP: Remove Dashboard on Disconnect ---
+    pthread_mutex_lock(&dlock);
+    for (auto it = dashboard_sockets.begin(); it != dashboard_sockets.end(); ) {
+        if (*it == tdL.cl) {
+            cout << "[Thread " << tdL.idThread << "] Unregistering Dashboard socket " << tdL.cl << endl;
+            it = dashboard_sockets.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    pthread_mutex_unlock(&dlock);
+    // -----------------------------------------------
+
     close(tdL.cl);
     free(arg);
     return (NULL);
@@ -64,16 +102,11 @@ void *treat(void *arg) {
 void raspunde(void *arg) {
     struct thData tdL = *((struct thData *)arg);
     AMPHeader header;
-    int i=0;
+    
     for ( ; ; ) {
-
-        if (!read_n_bytes(tdL.cl, &header, sizeof(AMPHeader))) {
-            printf("[Thread %d] Client disconnected or error reading header.\n", tdL.idThread);
-            break;
-        }
+        if (!read_n_bytes(tdL.cl, &header, sizeof(AMPHeader))) break;
 
         u32 payloadLen = ntohl(header.payload_length);
-
         char* payload = new char[payloadLen + 1];
         if (payloadLen > 0) {
             if (!read_n_bytes(tdL.cl, payload, payloadLen)) {
@@ -82,73 +115,68 @@ void raspunde(void *arg) {
             }
         }
         payload[payloadLen] = '\0';
-
         string payloadStr(payload, payloadLen);
         string responseMsg;
-        string cmdName;
-        
-        pthread_mutex_lock(&mlock); 
-        cout << "[Thread " << tdL.idThread << "] Command Received: ";
+
+        pthread_mutex_lock(&mlock);
         
         switch (header.message_type) {
             case CMD_AUTH:
-                cmdName = "AUTH_REQ";
-                cout << cmdName << " | Payload: " << payload << endl;
+                cout << "[Thread " << tdL.idThread << "] AUTH_REQ: " << payloadStr << endl;
+                
+                // --- NEW LOGIC: Check for ADMIN Role ---
+                if (payloadStr.find("ADMIN") != string::npos) {
+                    pthread_mutex_lock(&dlock);
+                    dashboard_sockets.push_back(tdL.cl);
+                    pthread_mutex_unlock(&dlock);
+                    cout << "[Thread " << tdL.idThread << "] -> Registered as DASHBOARD." << endl;
+                }
+                // ---------------------------------------
+                
                 responseMsg = "{\"status\":\"ok\",\"cmd\":\"AUTH_REQ\"}";
                 break;
+
             case CMD_LOG:
-                cmdName = "LOG_DATA";
-                cout << cmdName << " | Payload saved to database" << endl;
-                
                 {
+                    // 1. Save to DB
                     string timestamp = extract_field(payloadStr, "timestamp");
                     string hostname = extract_field(payloadStr, "hostname");
                     string severity = extract_field(payloadStr, "severity");
-                    string application = extract_field(payloadStr, "application");
-                    string message = extract_field(payloadStr, "message");
-                    string PID = extract_field(payloadStr, "PID");
+                    string app = extract_field(payloadStr, "application");
+                    string msg = extract_field(payloadStr, "message");
+                    string pid = extract_field(payloadStr, "PID");
+
+                    // Handle missing application field in legacy logs
+                    if (app.empty()) app = "System";
+
+                    g_db_manager->insert_log(timestamp, hostname, severity, app, msg, pid, "agent");
+                    cout << "[Thread " << tdL.idThread << "] LOG_DATA saved." << endl;
                     
-                    int64_t log_id = g_db_manager->insert_log(
-                        timestamp, hostname, severity, application, message, PID, "agent"
-                    );
-                    
-                    cout << "[Thread " << tdL.idThread << "] Log inserted with ID: " << log_id << endl;
+                    // 2. Broadcast to Dashboards
+                    // We must release mlock before broadcasting to avoid deadlocks with dlock
+                    pthread_mutex_unlock(&mlock); 
+                    broadcast_to_dashboards(payloadStr);
+                    pthread_mutex_lock(&mlock); // Relock for the loop end
                 }
-                broadcast_to_dashboards(payloadStr); 
                 responseMsg = "{\"status\":\"ok\",\"cmd\":\"LOG_DATA\"}";
                 break;
+
             case CMD_HEARTBEAT:
-                cmdName = "HEARTBEAT";
-                cout << cmdName << endl;
                 responseMsg = "{\"status\":\"ok\",\"cmd\":\"HEARTBEAT\"}";
-                break;
-            default:
-                cmdName = "UNKNOWN";
-                cout << cmdName << " (" << (int)header.message_type << ")" << endl;
-                responseMsg = "{\"status\":\"error\",\"cmd\":\"UNKNOWN\"}";
                 break;
         }
         pthread_mutex_unlock(&mlock);
-
         delete[] payload;
 
+        // Send Response
         AMPHeader respHeader;
         respHeader.version = 1;
         respHeader.message_type = header.message_type;
         respHeader.reserved = 0;
         respHeader.payload_length = htonl(responseMsg.size());
 
-        if (write(tdL.cl, &respHeader, sizeof(respHeader)) <= 0) {
-            perror("[Thread] Error writing response header to client.\n");
-            break;
-        }
-
-        if (!responseMsg.empty()) {
-            if (write(tdL.cl, responseMsg.data(), responseMsg.size()) <= 0) {
-                perror("[Thread] Error writing response payload to client.\n");
-                break;
-            }
-        }
+        if (write(tdL.cl, &respHeader, sizeof(respHeader)) <= 0) break;
+        if (write(tdL.cl, responseMsg.data(), responseMsg.size()) <= 0) break;
     }
 }
 
