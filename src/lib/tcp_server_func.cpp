@@ -29,18 +29,20 @@ pthread_mutex_t dlock = PTHREAD_MUTEX_INITIALIZER; // Protects dashboard_sockets
 // Helper to safely send to all dashboards
 void broadcast_to_dashboards(string jsonLog) {
     pthread_mutex_lock(&dlock);
+    
+    // 1. Construct the Header
+    AMPHeader header;
+    header.version = 1;
+    header.message_type = CMD_LOG; // Tell dashboard this is a log
+    header.reserved = 0;
+    header.payload_length = htonl(jsonLog.size()); // Critical: Network Byte Order
 
-    // Prepare a header for the log message
-    AMPHeader logHeader;
-    logHeader.version = 1;
-    logHeader.message_type = CMD_LOG;
-    logHeader.reserved = 0;
-    logHeader.payload_length = htonl(jsonLog.size());
-
-    // Loop through all dashboards and send the log (header + payload)
-    for (size_t i = 0; i < dashboard_sockets.size(); i++) {
-        // Use MSG_NOSIGNAL to avoid crashing if a dashboard closed the connection
-        send(dashboard_sockets[i], &logHeader, sizeof(logHeader), MSG_NOSIGNAL);
+    // Loop through all dashboards
+    for (int i = 0; i < dashboard_sockets.size(); i++) {
+        // 2. Send Header First
+        send(dashboard_sockets[i], &header, sizeof(AMPHeader), MSG_NOSIGNAL);
+        
+        // 3. Send Payload (JSON)
         send(dashboard_sockets[i], jsonLog.c_str(), jsonLog.size(), MSG_NOSIGNAL);
     }
     pthread_mutex_unlock(&dlock);
@@ -75,13 +77,13 @@ static string extract_field(const string& json, const string& key) {
 void *treat(void *arg) {
     struct thData tdL;
     tdL = *((struct thData *)arg);
-    printf("[thread %d] Client connected.\n", tdL.idThread);
+    printf("[thread %d] Client connected. Waiting for commands...\n", tdL.idThread);
     fflush(stdout);
     pthread_detach(pthread_self());
     
     raspunde((struct thData *)arg);
     
-    // --- CLEANUP: Remove Dashboard on Disconnect ---
+    // If this client was a dashboard, remove it from the list
     pthread_mutex_lock(&dlock);
     for (auto it = dashboard_sockets.begin(); it != dashboard_sockets.end(); ) {
         if (*it == tdL.cl) {
@@ -92,8 +94,7 @@ void *treat(void *arg) {
         }
     }
     pthread_mutex_unlock(&dlock);
-    // -----------------------------------------------
-
+    
     close(tdL.cl);
     free(arg);
     return (NULL);
