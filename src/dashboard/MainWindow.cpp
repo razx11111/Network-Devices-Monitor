@@ -150,7 +150,7 @@ void MainWindow::setupUI() {
     
     // --- TABLE CONFIGURATION ---
     logTable = new QTableWidget(this);
-    logTable->setColumnCount(7); // INCREASED TO 7
+    logTable->setColumnCount(7); 
     logTable->setHorizontalHeaderLabels({"Timestamp", "Source", "PID", "Facility", "Severity", "App", "Message"});
     
     // Styling
