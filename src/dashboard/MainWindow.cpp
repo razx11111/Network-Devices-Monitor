@@ -35,7 +35,7 @@ void MainWindow::attemptConnection() {
 
 void MainWindow::onConnected() {
     reconnectTimer->stop();
-    statusLabel->setText("Status: Connected (Live Stream)");
+    statusLabel->setText("Status: Connected");
     statusLabel->setStyleSheet("font-weight: bold; color: #00ff00; font-size: 14px; padding: 5px; background-color: #222;");
 
     QJsonObject authObj;
@@ -51,6 +51,10 @@ void MainWindow::onConnected() {
 
     socket->write((char*)&header, sizeof(header));
     socket->write(payload);
+
+    QTimer *statsTimer = new QTimer(this);
+    connect(statsTimer, &QTimer::timeout, this, &MainWindow::requestStats);
+    statsTimer->start(5000);
 }
 
 void MainWindow::onDisconnected() {
@@ -102,6 +106,47 @@ void MainWindow::setupUI() {
     statusLabel = new QLabel("Status: Connecting...", this);
     statusLabel->setStyleSheet("font-weight: bold; color: orange; font-size: 14px; padding: 5px;");
     statusLayout->addWidget(statusLabel);
+
+    // --- STATS PANEL ---
+    statsBox = new QGroupBox("Live Statistics", this);
+    statsBox->setStyleSheet("QGroupBox { border: 1px solid gray; border-radius: 5px; margin-top: 10px; color: white; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top center; padding: 0 3px; }");
+    statsBox->setFixedHeight(80);
+
+    QHBoxLayout *statsLayout = new QHBoxLayout();
+
+    // Helper to create styled labels
+    auto createStat = [](QString title, QString color) {
+        QLabel *lbl = new QLabel("0", nullptr);
+        lbl->setStyleSheet("font-size: 18px; font-weight: bold; color: " + color + "; border: 1px solid " + color + "; border-radius: 4px; padding: 5px;");
+        lbl->setAlignment(Qt::AlignCenter);
+        
+        QVBoxLayout *vbox = new QVBoxLayout();
+        QLabel *titleLbl = new QLabel(title);
+        titleLbl->setStyleSheet("color: #aaa; font-size: 10px;");
+        titleLbl->setAlignment(Qt::AlignCenter);
+        
+        vbox->addWidget(lbl);
+        vbox->addWidget(titleLbl);
+        
+        QWidget *container = new QWidget();
+        container->setLayout(vbox);
+        return qMakePair(lbl, container);
+    };
+
+    auto infoPair = createStat("INFO", "#00ff00");
+    lblInfoCount = infoPair.first;
+
+    auto warnPair = createStat("WARNING", "orange");
+    lblWarnCount = warnPair.first;
+
+    auto errPair = createStat("CRITICAL/ERR", "#ff4d4d");
+    lblErrCount = errPair.first;
+
+    statsLayout->addWidget(infoPair.second);
+    statsLayout->addWidget(warnPair.second);
+    statsLayout->addWidget(errPair.second);
+
+    statsBox->setLayout(statsLayout);
     
     // --- TABLE CONFIGURATION ---
     logTable = new QTableWidget(this);
@@ -120,6 +165,7 @@ void MainWindow::setupUI() {
                             "QHeaderView::section { background-color:rgb(0, 0, 128); color: white; padding: 4px; border: 1px solid #db1134; }");
 
     layout->addLayout(statusLayout);
+    layout->addWidget(statsBox);
     layout->addLayout(searchLayout);
     layout->addWidget(logTable);
 }
@@ -151,6 +197,19 @@ void MainWindow::processJson(const QByteArray &data) {
     QJsonDocument doc = QJsonDocument::fromJson(data);
     if (doc.isNull() || !doc.isObject()) return;
     QJsonObject obj = doc.object();
+
+    if (obj.contains("stats")) {
+        QJsonObject stats = obj["stats"].toObject();
+        
+        int info = stats["INFO"].toInt() + stats["NOTICE"].toInt() + stats["DEBUG"].toInt();
+        int warn = stats["WARNING"].toInt();
+        int err  = stats["ERROR"].toInt() + stats["CRITICAL"].toInt() + stats["ALERT"].toInt() + stats["EMERGENCY"].toInt();
+
+        lblInfoCount->setText(QString::number(info));
+        lblWarnCount->setText(QString::number(warn));
+        lblErrCount->setText(QString::number(err));
+        return;
+    }
 
     // CASE 1: Search Results
     if (obj.contains("results")) {
@@ -199,7 +258,7 @@ void MainWindow::addLogEntry(const QString &ts, const QString &src, const QStrin
     logTable->setItem(row, 0, new QTableWidgetItem(ts));
     logTable->setItem(row, 1, new QTableWidgetItem(src));
     logTable->setItem(row, 2, new QTableWidgetItem(pid));
-    logTable->setItem(row, 3, new QTableWidgetItem(fac)); // NEW ITEM
+    logTable->setItem(row, 3, new QTableWidgetItem(fac)); 
     logTable->setItem(row, 4, new QTableWidgetItem(sev));
     logTable->setItem(row, 5, new QTableWidgetItem(app));
     logTable->setItem(row, 6, new QTableWidgetItem(msg));
@@ -240,4 +299,16 @@ void MainWindow::sendSearchRequest() {
     socket->write(payload);
     
     logTable->setRowCount(0);
+}
+
+void MainWindow::requestStats() {
+    if (socket->state() != QAbstractSocket::ConnectedState) return;
+
+    AMPHeader header;
+    header.version = 1;
+    header.message_type = CMD_STATS; // 5
+    header.reserved = 0;
+    header.payload_length = 0; // No payload needed for request
+
+    socket->write((char*)&header, sizeof(header));
 }

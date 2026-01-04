@@ -118,3 +118,22 @@ std::vector<LogEntry> SQLiteManager::search_logs(std::string keyword, std::strin
     sqlite3_finalize(stmt);
     return results;
 }
+
+std::map<std::string, int> SQLiteManager::get_severity_counts() {
+    std::lock_guard<std::mutex> lock(db_mutex);
+    std::map<std::string, int> counts;
+    
+    // Count logs grouped by severity
+    const char* sql = "SELECT severity, COUNT(*) FROM logs GROUP BY severity";
+    
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* sev = (const char*)sqlite3_column_text(stmt, 0);
+            int count = sqlite3_column_int(stmt, 1);
+            if (sev) counts[std::string(sev)] = count;
+        }
+    }
+    sqlite3_finalize(stmt);
+    return counts;
+}

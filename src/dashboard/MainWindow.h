@@ -10,6 +10,8 @@
 #include <QPushButton>    
 #include <QComboBox>
 #include <QVBoxLayout> // Added missing include
+#include <QGroupBox>
+#include <QGridLayout>
 
 #include "protocol.h"
 
@@ -27,6 +29,7 @@ private slots:
     void onReadyRead();
     void onSocketError(QAbstractSocket::SocketError socketError);
     void sendSearchRequest();
+    void requestStats(); // New slot to ask for stats
 
 private:
     void setupUI();
@@ -45,6 +48,10 @@ private:
     QLineEdit *searchBar;
     QComboBox *severityFilter;
     QPushButton *searchButton;
+    QGroupBox *statsBox;
+    QLabel *lblInfoCount;
+    QLabel *lblWarnCount;
+    QLabel *lblErrCount;
 };
 
 #endif

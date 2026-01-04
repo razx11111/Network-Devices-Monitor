@@ -358,6 +358,8 @@ dashboard_autogen/timestamp: /home/razvan/Documents/NetworkDevicesManager/src/da
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetwork-config.h \
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetworkglobal.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGridLayout \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGroupBox \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLineEdit \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
@@ -374,6 +376,7 @@ dashboard_autogen/timestamp: /home/razvan/Documents/NetworkDevicesManager/src/da
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgroupbox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h \
@@ -826,6 +829,8 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: /home/razvan/Documents/NetworkDevices
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetwork-config.h \
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetworkglobal.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGridLayout \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGroupBox \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QHBoxLayout \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QHeaderView \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
@@ -844,6 +849,7 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: /home/razvan/Documents/NetworkDevices
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgroupbox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qheaderview.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
@@ -1218,6 +1224,8 @@ CMakeFiles/dashboard.dir/dashboard_autogen/mocs_compilation.cpp.o: dashboard_aut
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetwork-config.h \
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetworkglobal.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGridLayout \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGroupBox \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLineEdit \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
@@ -1234,6 +1242,7 @@ CMakeFiles/dashboard.dir/dashboard_autogen/mocs_compilation.cpp.o: dashboard_aut
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgroupbox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h \
@@ -1612,6 +1621,8 @@ CMakeFiles/dashboard.dir/main.cpp.o: /home/razvan/Documents/NetworkDevicesManage
   /usr/include/x86_64-linux-gnu/qt5/QtNetwork/qtnetworkglobal.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QApplication \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGridLayout \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGroupBox \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLineEdit \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
@@ -1629,6 +1640,7 @@ CMakeFiles/dashboard.dir/main.cpp.o: /home/razvan/Documents/NetworkDevicesManage
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgroupbox.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
   /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h \
@@ -1823,6 +1835,12 @@ dashboard_autogen/mocs_compilation.cpp:
 /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow:
 
 /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLineEdit:
+
+/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGroupBox:
+
+/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgroupbox.h:
+
+/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGridLayout:
 
 /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox:
 

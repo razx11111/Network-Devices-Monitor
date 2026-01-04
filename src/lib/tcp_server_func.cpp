@@ -231,6 +231,28 @@ void raspunde(void *arg) {
                 break;
             }
 
+            case CMD_STATS:
+            {
+                cout << "[Thread " << tdL.idThread << "] STATS_REQ" << endl;
+                
+                // 1. Get Counts
+                auto counts = g_db_manager->get_severity_counts();
+                
+                // 2. Build JSON
+                // Format: {"status":"ok", "stats": {"INFO": 10, "ERROR": 2}}
+                string json = "{\"status\":\"ok\",\"stats\":{";
+                int i = 0;
+                for (auto const& [sev, count] : counts) {
+                    json += "\"" + sev + "\":" + to_string(count);
+                    if (i < counts.size() - 1) json += ",";
+                    i++;
+                }
+                json += "}}";
+                
+                responseMsg = json;
+                break;
+            }
+
             case CMD_HEARTBEAT:
                 responseMsg = "{\"status\":\"ok\",\"cmd\":\"HEARTBEAT\"}";
                 break;
