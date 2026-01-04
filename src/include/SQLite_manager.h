@@ -5,7 +5,7 @@
 #include <string>
 #include <mutex>
 #include <vector>
-#include <map>
+#include <map> // <--- CRITIC: Necesar pentru std::map
 
 // Structură pentru rezultatele căutării
 struct LogEntry {
@@ -37,11 +37,12 @@ public:
                        const std::string& pid,
                        const std::string& source_type);
     
-    // Funcția nouă de căutare
+    // Funcția de căutare
     std::vector<LogEntry> search_logs(std::string query, std::string severity, std::string limit);
+
     std::map<std::string, int> get_severity_counts();
     
-    // Query-uri generale (opțional, păstrat din codul vechi)
+    // Query-uri generale
     std::vector<std::string> query_logs(const std::string& where_clause, int limit);
 };
 

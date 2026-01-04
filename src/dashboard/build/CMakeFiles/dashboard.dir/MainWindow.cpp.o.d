@@ -365,4 +365,6 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qendian.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qfloat16.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonArray \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonarray.h
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonarray.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QDebug \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qdebug.h

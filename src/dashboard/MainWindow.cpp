@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QtEndian> 
 #include <QJsonArray>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();
@@ -76,13 +77,12 @@ void MainWindow::onSocketError(QAbstractSocket::SocketError socketError) {
 
 void MainWindow::setupUI() {
     setWindowTitle("Network Devices Monitor - Admin Dashboard");
-    resize(1100, 600); // Slightly wider for extra column
+    resize(1100, 600); 
 
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     QVBoxLayout *layout = new QVBoxLayout(centralWidget);
 
-    // --- SEARCH BAR ---
     QHBoxLayout *searchLayout = new QHBoxLayout();
 
     searchBar = new QLineEdit(this);
@@ -101,23 +101,20 @@ void MainWindow::setupUI() {
     searchLayout->addWidget(severityFilter);
     searchLayout->addWidget(searchButton);
     
-    // Header Status
     QHBoxLayout *statusLayout = new QHBoxLayout();
     statusLabel = new QLabel("Status: Connecting...", this);
     statusLabel->setStyleSheet("font-weight: bold; color: orange; font-size: 14px; padding: 5px;");
     statusLayout->addWidget(statusLabel);
 
-    // --- STATS PANEL ---
     statsBox = new QGroupBox("Live Statistics", this);
     statsBox->setStyleSheet("QGroupBox { border: 1px solid gray; border-radius: 5px; margin-top: 10px; color: white; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top center; padding: 0 3px; }");
     statsBox->setFixedHeight(80);
 
     QHBoxLayout *statsLayout = new QHBoxLayout();
 
-    // Helper to create styled labels
-    auto createStat = [](QString title, QString color) {
+    auto createStat = [](QString title, QString textColor, QString bgColor) {
         QLabel *lbl = new QLabel("0", nullptr);
-        lbl->setStyleSheet("font-size: 18px; font-weight: bold; color: " + color + "; border: 1px solid " + color + "; border-radius: 4px; padding: 5px;");
+        lbl->setStyleSheet("font-size: 18px; font-weight: bold; color: " + textColor + "; background-color: " + bgColor + "; border: 1px solid " + textColor + "; border-radius: 4px; padding: 5px;");
         lbl->setAlignment(Qt::AlignCenter);
         
         QVBoxLayout *vbox = new QVBoxLayout();
@@ -133,13 +130,13 @@ void MainWindow::setupUI() {
         return qMakePair(lbl, container);
     };
 
-    auto infoPair = createStat("INFO", "#00ff00");
+    auto infoPair = createStat("INFO", "white", "#008000");
     lblInfoCount = infoPair.first;
 
-    auto warnPair = createStat("WARNING", "orange");
+    auto warnPair = createStat("WARNING", "white", "orange");
     lblWarnCount = warnPair.first;
 
-    auto errPair = createStat("CRITICAL/ERR", "#ff4d4d");
+    auto errPair = createStat("CRITICAL/ERR", "white", "#CC0000");
     lblErrCount = errPair.first;
 
     statsLayout->addWidget(infoPair.second);
@@ -148,19 +145,16 @@ void MainWindow::setupUI() {
 
     statsBox->setLayout(statsLayout);
     
-    // --- TABLE CONFIGURATION ---
     logTable = new QTableWidget(this);
     logTable->setColumnCount(7); 
     logTable->setHorizontalHeaderLabels({"Timestamp", "Source", "PID", "Facility", "Severity", "App", "Message"});
     
-    // Styling
     logTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    logTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // Timestamp
-    logTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents); // PID
-    logTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents); // Facility (NEW)
-    logTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents); // Severity
+    logTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    logTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    logTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    logTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
     
-    // Dark Mode Style
     logTable->setStyleSheet("QTableWidget { background-color: #2d2d2d; color: white; gridline-color: #db1134; }"
                             "QHeaderView::section { background-color:rgb(0, 0, 128); color: white; padding: 4px; border: 1px solid #db1134; }");
 
@@ -204,14 +198,13 @@ void MainWindow::processJson(const QByteArray &data) {
         int info = stats["INFO"].toInt() + stats["NOTICE"].toInt() + stats["DEBUG"].toInt();
         int warn = stats["WARNING"].toInt();
         int err  = stats["ERROR"].toInt() + stats["CRITICAL"].toInt() + stats["ALERT"].toInt() + stats["EMERGENCY"].toInt();
-
+        
         lblInfoCount->setText(QString::number(info));
         lblWarnCount->setText(QString::number(warn));
         lblErrCount->setText(QString::number(err));
         return;
     }
 
-    // CASE 1: Search Results
     if (obj.contains("results")) {
         QJsonArray results = obj["results"].toArray();
         logTable->setRowCount(0);
@@ -222,7 +215,7 @@ void MainWindow::processJson(const QByteArray &data) {
                 log["timestamp"].toString(),
                 log["hostname"].toString(),
                 log["pid"].toString(),
-                log["facility"].toString(), // NEW
+                log["facility"].toString(),
                 log["severity"].toString(),
                 log["application"].toString(),
                 log["message"].toString()
@@ -231,7 +224,6 @@ void MainWindow::processJson(const QByteArray &data) {
         return;
     }
 
-    // CASE 2: Live Log
     if (obj.contains("status") && obj["status"].toString() == "ok") return;
 
     QString ts = obj.value("timestamp").toString();
@@ -239,12 +231,11 @@ void MainWindow::processJson(const QByteArray &data) {
     if (src.isEmpty()) src = obj.value("source").toString();
     
     QString pid = obj.value("pid").toString();
-    QString fac = obj.value("facility").toString(); // NEW: Extract Facility
+    QString fac = obj.value("facility").toString();
     QString sev = obj.value("severity").toString();
     QString app = obj.value("application").toString();
     QString msg = obj.value("message").toString();
 
-    // If facility is empty (legacy logs), default to "-"
     if (fac.isEmpty()) fac = "-";
 
     addLogEntry(ts, src, pid, fac, sev, app, msg);
@@ -263,14 +254,12 @@ void MainWindow::addLogEntry(const QString &ts, const QString &src, const QStrin
     logTable->setItem(row, 5, new QTableWidgetItem(app));
     logTable->setItem(row, 6, new QTableWidgetItem(msg));
 
-    // Color Coding
     QColor color = Qt::white;
     if (sev.contains("ERR") || sev.contains("CRIT") || sev.contains("FATAL") || sev.contains("EMERG") || sev.contains("ALERT")) 
         color = QColor("#ff4d4d"); 
     else if (sev.contains("WARNING")) 
         color = QColor("orange");
 
-    // Apply color to all 7 columns
     for (int i=0; i<7; i++) {
         logTable->item(row, i)->setForeground(color);
     }
@@ -306,9 +295,9 @@ void MainWindow::requestStats() {
 
     AMPHeader header;
     header.version = 1;
-    header.message_type = CMD_STATS; // 5
+    header.message_type = CMD_STATS;
     header.reserved = 0;
-    header.payload_length = 0; // No payload needed for request
+    header.payload_length = 0;
 
     socket->write((char*)&header, sizeof(header));
 }
