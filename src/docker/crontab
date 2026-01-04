@@ -1,0 +1,8 @@
+# Run every minute: Standard Maintenance (Severity: INFO)
+* * * * * logger -t system_maintenance -p local0.info "Disk cleanup completed successfully. Usage: 42%"
+
+# Run every 2 minutes: Security Scan finding an issue (Severity: ERR)
+*/2 * * * * logger -t security_scanner -p auth.err "Integrity check failed: /etc/shadow checksum mismatch"
+
+# Run every minute: Application Health Check (Severity: WARN)
+* * * * * logger -t app_watchdog -p local0.warning "Memory usage high (85%). Throttling background tasks."

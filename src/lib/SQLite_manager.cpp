@@ -40,7 +40,7 @@ bool SQLiteManager::init_database() {
     return true;
 }
 
-int64_t SQLiteManager::insert_log(const std::string& timestamp,
+int SQLiteManager::insert_log(const std::string& timestamp,
                                    const std::string& hostname,
                                    const std::string& severity,
                                    const std::string& application,
@@ -69,7 +69,7 @@ int64_t SQLiteManager::insert_log(const std::string& timestamp,
     sqlite3_bind_text(stmt, 7, source_type.c_str(), -1, SQLITE_TRANSIENT);
     
     int result = sqlite3_step(stmt);
-    int64_t last_id = -1;
+    int last_id = -1;
     
     if (result == SQLITE_DONE) {
         last_id = sqlite3_last_insert_rowid(db);
@@ -79,4 +79,49 @@ int64_t SQLiteManager::insert_log(const std::string& timestamp,
     
     sqlite3_finalize(stmt);
     return last_id;
+}
+
+std::vector<LogEntry> SQLiteManager::search_logs(std::string keyword, std::string severity_filter, std::string limit) {
+    std::lock_guard<std::mutex> lock(db_mutex);
+    std::vector<LogEntry> results;
+    
+    std::string sql = "SELECT timestamp, hostname, pid, severity, application, message FROM logs WHERE 1=1";
+
+    // Adăugare filtre dinamic
+    if (!keyword.empty()) {
+        sql += " AND message LIKE '%" + keyword + "%'";
+    }
+    if (severity_filter != "ALL" && !severity_filter.empty()) {
+        sql += " AND severity='" + severity_filter + "'";
+    }
+    
+    // Sortare și limitare
+    sql += " ORDER BY id DESC LIMIT " + (limit.empty() ? "100" : limit);
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, 0) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            LogEntry entry;
+            // Verificăm dacă coloana nu este NULL înainte de cast
+            const char* ts = (const char*)sqlite3_column_text(stmt, 0);
+            const char* host = (const char*)sqlite3_column_text(stmt, 1);
+            const char* pid = (const char*)sqlite3_column_text(stmt, 2);
+            const char* sev = (const char*)sqlite3_column_text(stmt, 3);
+            const char* app = (const char*)sqlite3_column_text(stmt, 4);
+            const char* msg = (const char*)sqlite3_column_text(stmt, 5);
+
+            entry.timestamp = ts ? ts : "";
+            entry.hostname  = host ? host : "";
+            entry.pid       = pid ? pid : "";
+            entry.severity  = sev ? sev : "";
+            entry.app       = app ? app : "";
+            entry.message   = msg ? msg : "";
+            
+            results.push_back(entry);
+        }
+    } else {
+        std::cerr << "[DB Error] Search failed: " << sqlite3_errmsg(db) << std::endl;
+    }
+    sqlite3_finalize(stmt);
+    return results;
 }

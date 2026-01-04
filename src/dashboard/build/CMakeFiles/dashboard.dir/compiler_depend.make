@@ -700,6 +700,8 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: /home/razvan/Documents/NetworkDevices
   /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
   /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
   /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/QCoreApplication \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonArray \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonDocument \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonObject \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/QTimer \
@@ -721,10 +723,13 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: /home/razvan/Documents/NetworkDevices
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qcontainerfwd.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qcontainertools_impl.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qcontiguouscache.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreapplication.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreevent.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qdatastream.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qdatetime.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qdebug.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qendian.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qeventloop.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qflags.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qfloat16.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qgenericatomic.h \
@@ -735,6 +740,7 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: /home/razvan/Documents/NetworkDevices
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qiodevice.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qitemselectionmodel.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qiterator.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonarray.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsondocument.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonobject.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonvalue.h \
@@ -1662,11 +1668,15 @@ dashboard_autogen/mocs_compilation.cpp:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsondocument.h:
 
+/usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonarray.h:
+
 /usr/include/x86_64-linux-gnu/qt5/QtGui/qguiapplication.h:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qendian.h:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/QtEndian:
+
+/usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonArray:
 
 /usr/include/x86_64-linux-gnu/bits/xopen_lim.h:
 
@@ -1951,6 +1961,8 @@ dashboard_autogen/mocs_compilation.cpp:
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qatomic_cxx11.h:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qatomic.h:
+
+/usr/include/x86_64-linux-gnu/qt5/QtCore/QCoreApplication:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qarraydata.h:
 

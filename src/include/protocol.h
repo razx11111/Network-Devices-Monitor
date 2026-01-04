@@ -6,6 +6,7 @@
 #define CMD_AUTH 1
 #define CMD_LOG  2
 #define CMD_HEARTBEAT 3
+#define CMD_SEARCH 4
 #define PORT 9999
 
 #define OK 0

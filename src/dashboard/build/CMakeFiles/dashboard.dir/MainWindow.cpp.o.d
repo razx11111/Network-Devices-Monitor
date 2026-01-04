@@ -334,6 +334,10 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
  /home/razvan/Documents/NetworkDevicesManager/src/dashboard/../include/protocol.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QCoreApplication \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreapplication.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreevent.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qeventloop.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QHeaderView \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qheaderview.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonDocument \
@@ -354,4 +358,6 @@ CMakeFiles/dashboard.dir/MainWindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QtEndian \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qendian.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qfloat16.h
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qfloat16.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QJsonArray \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qjsonarray.h

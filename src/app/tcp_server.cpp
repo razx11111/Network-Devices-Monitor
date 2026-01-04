@@ -9,6 +9,7 @@
 #include <iostream>
 #include <pthread.h>
 #include <thread>
+#include <algorithm> // Added for string manipulation if needed
 
 #include "protocol.h"
 #include "udp_server.h"
@@ -22,6 +23,18 @@ extern int errno;
 
 using namespace std;
 
+// Helper to escape JSON strings locally for UDP
+string local_json_escape(const string& str) {
+    string output;
+    for (char c : str) {
+        if (c == '"') output += "\\\"";
+        else if (c == '\\') output += "\\\\";
+        else if (c == '\n') output += "\\n";
+        else output += c;
+    }
+    return output;
+}
+
 int main() {
     struct sockaddr_in server;
     struct sockaddr_in from;
@@ -29,35 +42,48 @@ int main() {
     int i = 0;
 
     g_db_manager = new SQLiteManager("network_monitor.db");
-    
-    // UDP Syslog server in thread separat
-    g_udp_server = new UDPSyslogServer(514); 
-    
-    g_udp_server->set_message_handler([](string ts, string host, string sev, string app, string msg) {
-        if (g_db_manager) {
-            // 1. Insert into DB
-            g_db_manager->insert_log(ts, host, sev, app, msg, "0", "syslog");
-            cout << "[UDP] Log saved from " << host << endl;
-
-            // 2. Broadcast to Dashboard (Create JSON manually)
-            // Note: We need to match the JSON format the Dashboard expects
-            string jsonLog = "{";
-            jsonLog += "\"timestamp\":\"" + ts + "\",";
-            jsonLog += "\"hostname\":\"" + host + "\",";
-            jsonLog += "\"severity\":\"" + sev + "\",";
-            jsonLog += "\"application\":\"" + app + "\",";
-            jsonLog += "\"message\":\"" + msg + "\",";
-            jsonLog += "\"source\":\"UDP\""; 
-            jsonLog += "}";
-
-            broadcast_to_dashboards(jsonLog);
-        }
-    });
     if (!g_db_manager->init_database()) {
         cerr << "Failed to initialize database!" << endl;
         return 1;
     }
     cout << "[server] Database initialized successfully." << endl;
+    
+    g_udp_server = new UDPSyslogServer(514); 
+    
+    g_udp_server->set_message_handler([](string ts, string host, string sev, string app, string msg) {
+        if (g_db_manager) {
+            sleep(1);
+            // 'app' might be "sshd[1234]"
+            string app_name = app;
+            string pid = "0"; // Default PID
+            size_t pid_start = app.find('[');
+            if (pid_start != string::npos) {
+                size_t pid_end = app.find(']', pid_start);
+                if (pid_end != string::npos) {
+                    app_name = app.substr(0, pid_start);
+                    pid = app.substr(pid_start + 1, pid_end - pid_start - 1);
+                }
+            }
+            
+            // Insert into DB
+            g_db_manager->insert_log(ts, host, sev, app_name, msg, pid, "syslog");
+            cout << "[UDP] Log saved from " << host << endl;
+
+            // FIX 2: Broadcast to Dashboards
+            // We construct the JSON manually here
+            string jsonLog = "{";
+            jsonLog += "\"timestamp\":\"" + local_json_escape(ts) + "\",";
+            jsonLog += "\"hostname\":\"" + local_json_escape(host) + "\",";
+            jsonLog += "\"pid\":\"" + local_json_escape(pid) + "\",";
+            jsonLog += "\"severity\":\"" + local_json_escape(sev) + "\",";
+            jsonLog += "\"application\":\"" + local_json_escape(app_name) + "\",";
+            jsonLog += "\"message\":\"" + local_json_escape(msg) + "\",";
+            jsonLog += "\"source\":\"UDP\""; 
+            jsonLog += "}";
+
+            broadcast_to_dashboards(jsonLog);
+        }
+    }); 
 
     thread udp_thread([&]() {
         g_udp_server->start();
