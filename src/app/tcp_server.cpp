@@ -49,13 +49,11 @@ int main() {
     cout << "[server] Database initialized successfully." << endl;
     
     g_udp_server = new UDPSyslogServer(514); 
-    
-    g_udp_server->set_message_handler([](string ts, string host, string sev, string app, string msg) {
+    g_udp_server->set_message_handler([](string ts, string host, string fac, string sev, string app, string msg) {
         if (g_db_manager) {
             sleep(1);
-            // 'app' might be "sshd[1234]"
             string app_name = app;
-            string pid = "0"; // Default PID
+            string pid = "0";
             size_t pid_start = app.find('[');
             if (pid_start != string::npos) {
                 size_t pid_end = app.find(']', pid_start);
@@ -64,17 +62,16 @@ int main() {
                     pid = app.substr(pid_start + 1, pid_end - pid_start - 1);
                 }
             }
-            
-            // Insert into DB
-            g_db_manager->insert_log(ts, host, sev, app_name, msg, pid, "syslog");
-            cout << "[UDP] Log saved from " << host << endl;
 
-            // FIX 2: Broadcast to Dashboards
-            // We construct the JSON manually here
+            g_db_manager->insert_log(ts, host, fac, sev, app_name, msg, pid, "syslog");
+            cout << "[UDP] Log saved from " << host << " (" << fac << ")" << endl;
+
+            // Update JSON for Dashboard
             string jsonLog = "{";
             jsonLog += "\"timestamp\":\"" + local_json_escape(ts) + "\",";
             jsonLog += "\"hostname\":\"" + local_json_escape(host) + "\",";
             jsonLog += "\"pid\":\"" + local_json_escape(pid) + "\",";
+            jsonLog += "\"facility\":\"" + local_json_escape(fac) + "\","; 
             jsonLog += "\"severity\":\"" + local_json_escape(sev) + "\",";
             jsonLog += "\"application\":\"" + local_json_escape(app_name) + "\",";
             jsonLog += "\"message\":\"" + local_json_escape(msg) + "\",";
@@ -83,7 +80,7 @@ int main() {
 
             broadcast_to_dashboards(jsonLog);
         }
-    }); 
+    });
 
     thread udp_thread([&]() {
         g_udp_server->start();

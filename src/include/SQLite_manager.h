@@ -11,6 +11,7 @@ struct LogEntry {
     std::string timestamp;
     std::string hostname;
     std::string pid;
+    std::string facility; 
     std::string severity;
     std::string app;
     std::string message;
@@ -28,6 +29,7 @@ public:
     bool init_database();
     int insert_log(const std::string& timestamp,
                        const std::string& hostname,
+                       const std::string& facility,
                        const std::string& severity,
                        const std::string& application,
                        const std::string& message,

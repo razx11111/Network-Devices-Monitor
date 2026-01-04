@@ -13,30 +13,22 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     socket = new QTcpSocket(this);
     reconnectTimer = new QTimer(this);
 
-    // Conectare semnale socket
     connect(socket, &QTcpSocket::connected, this, &MainWindow::onConnected);
     connect(socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
     connect(socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
-    
-    // FIX 2: Înlocuit 'error' cu 'errorOccurred' (Qt 5.15+)
     connect(socket, &QTcpSocket::errorOccurred, this, &MainWindow::onSocketError);
 
-    // Timer pentru reconectare
     connect(reconnectTimer, &QTimer::timeout, this, &MainWindow::attemptConnection);
 
-    // Încearcă conectarea la pornire
     attemptConnection();
 }
 
 MainWindow::~MainWindow() {}
 
 void MainWindow::attemptConnection() {
-    // Only try if we are not already connected or trying
     if (socket->state() == QAbstractSocket::UnconnectedState) {
         statusLabel->setText("Status: Searching for Server...");
         statusLabel->setStyleSheet("font-weight: bold; color: orange; padding: 5px;");
-        
-        // Connect to localhost (Docker forwarded port)
         socket->connectToHost("127.0.0.1", 9999);
     }
 }
@@ -46,7 +38,6 @@ void MainWindow::onConnected() {
     statusLabel->setText("Status: Connected (Live Stream)");
     statusLabel->setStyleSheet("font-weight: bold; color: #00ff00; font-size: 14px; padding: 5px; background-color: #222;");
 
-    // --- SEND HANDSHAKE (ADMIN ROLE) ---
     QJsonObject authObj;
     authObj["role"] = "ADMIN";
     QJsonDocument doc(authObj);
@@ -65,13 +56,10 @@ void MainWindow::onConnected() {
 void MainWindow::onDisconnected() {
     statusLabel->setText("Status: Disconnected. Retrying...");
     statusLabel->setStyleSheet("font-weight: bold; color: red; padding: 5px;");
-    
-    // Încearcă reconectarea la fiecare 2 secunde
     reconnectTimer->start(2000);
 }
 
 void MainWindow::onSocketError(QAbstractSocket::SocketError socketError) {
-    // Dacă eroarea este "Connection Refused" (Docker oprit), doar reîncercăm
     if (socket->state() == QAbstractSocket::UnconnectedState) {
         if (!reconnectTimer->isActive()) {
             reconnectTimer->start(2000); 
@@ -84,13 +72,13 @@ void MainWindow::onSocketError(QAbstractSocket::SocketError socketError) {
 
 void MainWindow::setupUI() {
     setWindowTitle("Network Devices Monitor - Admin Dashboard");
-    resize(1000, 600);
+    resize(1100, 600); // Slightly wider for extra column
 
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     QVBoxLayout *layout = new QVBoxLayout(centralWidget);
 
-    // --- SEARCH BAR (Phase 2) ---
+    // --- SEARCH BAR ---
     QHBoxLayout *searchLayout = new QHBoxLayout();
 
     searchBar = new QLineEdit(this);
@@ -109,31 +97,30 @@ void MainWindow::setupUI() {
     searchLayout->addWidget(severityFilter);
     searchLayout->addWidget(searchButton);
     
-    // Header Status & PID
+    // Header Status
     QHBoxLayout *statusLayout = new QHBoxLayout();
     statusLabel = new QLabel("Status: Connecting...", this);
     statusLabel->setStyleSheet("font-weight: bold; color: orange; font-size: 14px; padding: 5px;");
-    
-
     statusLayout->addWidget(statusLabel);
     
-    // Table
+    // --- TABLE CONFIGURATION ---
     logTable = new QTableWidget(this);
-    logTable->setColumnCount(6);
-    logTable->setHorizontalHeaderLabels({"Timestamp", "Source", "PID", "Severity", "App", "Message"});
+    logTable->setColumnCount(7); // INCREASED TO 7
+    logTable->setHorizontalHeaderLabels({"Timestamp", "Source", "PID", "Facility", "Severity", "App", "Message"});
     
     // Styling
     logTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     logTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // Timestamp
     logTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents); // PID
-    logTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents); // Severity
+    logTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents); // Facility (NEW)
+    logTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents); // Severity
     
     // Dark Mode Style
     logTable->setStyleSheet("QTableWidget { background-color: #2d2d2d; color: white; gridline-color: #db1134; }"
                             "QHeaderView::section { background-color:rgb(0, 0, 128); color: white; padding: 4px; border: 1px solid #db1134; }");
 
     layout->addLayout(statusLayout);
-    layout->addLayout(searchLayout); // Adăugare Search Bar
+    layout->addLayout(searchLayout);
     layout->addWidget(logTable);
 }
 
@@ -142,20 +129,17 @@ void MainWindow::onReadyRead() {
 
     while (true) {
         if (static_cast<size_t>(buffer.size()) < sizeof(AMPHeader)) {
-            return; // Wait for full header
+            return;
         }
 
         AMPHeader *header = reinterpret_cast<AMPHeader*>(buffer.data());
         uint32_t payloadLen = qFromBigEndian(header->payload_length);
 
         if (static_cast<size_t>(buffer.size()) < sizeof(AMPHeader) + payloadLen) {
-            return; // Wait for full payload
+            return;
         }
 
-        // Remove header
         buffer.remove(0, sizeof(AMPHeader));
-        
-        // Extract payload
         QByteArray payload = buffer.left(payloadLen);
         buffer.remove(0, payloadLen);
 
@@ -168,10 +152,10 @@ void MainWindow::processJson(const QByteArray &data) {
     if (doc.isNull() || !doc.isObject()) return;
     QJsonObject obj = doc.object();
 
-    // CASE 1: Search Results (Array)
+    // CASE 1: Search Results
     if (obj.contains("results")) {
-        QJsonArray results = obj["results"].toArray(); // Acum funcționează datorită #include <QJsonArray>
-        logTable->setRowCount(0); // Clear table
+        QJsonArray results = obj["results"].toArray();
+        logTable->setRowCount(0);
         
         for (const auto &val : results) {
             QJsonObject log = val.toObject();
@@ -179,6 +163,7 @@ void MainWindow::processJson(const QByteArray &data) {
                 log["timestamp"].toString(),
                 log["hostname"].toString(),
                 log["pid"].toString(),
+                log["facility"].toString(), // NEW
                 log["severity"].toString(),
                 log["application"].toString(),
                 log["message"].toString()
@@ -187,7 +172,7 @@ void MainWindow::processJson(const QByteArray &data) {
         return;
     }
 
-    // CASE 2: Live Log (Single Object)
+    // CASE 2: Live Log
     if (obj.contains("status") && obj["status"].toString() == "ok") return;
 
     QString ts = obj.value("timestamp").toString();
@@ -195,42 +180,48 @@ void MainWindow::processJson(const QByteArray &data) {
     if (src.isEmpty()) src = obj.value("source").toString();
     
     QString pid = obj.value("pid").toString();
+    QString fac = obj.value("facility").toString(); // NEW: Extract Facility
     QString sev = obj.value("severity").toString();
     QString app = obj.value("application").toString();
     QString msg = obj.value("message").toString();
 
-    addLogEntry(ts, src, pid, sev, app, msg);
+    // If facility is empty (legacy logs), default to "-"
+    if (fac.isEmpty()) fac = "-";
+
+    addLogEntry(ts, src, pid, fac, sev, app, msg);
 }
 
-void MainWindow::addLogEntry(const QString &ts, const QString &src, const QString &pid, const QString &sev, const QString &app, const QString &msg) {
-    int row = 0; // Insert la început
+void MainWindow::addLogEntry(const QString &ts, const QString &src, const QString &pid, 
+                             const QString &fac, const QString &sev, const QString &app, const QString &msg) {
+    int row = 0; 
     logTable->insertRow(row);
 
     logTable->setItem(row, 0, new QTableWidgetItem(ts));
     logTable->setItem(row, 1, new QTableWidgetItem(src));
     logTable->setItem(row, 2, new QTableWidgetItem(pid));
-    logTable->setItem(row, 3, new QTableWidgetItem(sev));
-    logTable->setItem(row, 4, new QTableWidgetItem(app));
-    logTable->setItem(row, 5, new QTableWidgetItem(msg));
+    logTable->setItem(row, 3, new QTableWidgetItem(fac)); // NEW ITEM
+    logTable->setItem(row, 4, new QTableWidgetItem(sev));
+    logTable->setItem(row, 5, new QTableWidgetItem(app));
+    logTable->setItem(row, 6, new QTableWidgetItem(msg));
 
-    // Color Codingd
+    // Color Coding
     QColor color = Qt::white;
-    if (sev.contains("ERR") || sev.contains("CRIT") || sev.contains("FATAL") || sev.contains("EMERG") || sev.contains("ALERT")) color = QColor("#ff4d4d"); 
-    else if (sev.contains("WARNING")) color = QColor("orange");
+    if (sev.contains("ERR") || sev.contains("CRIT") || sev.contains("FATAL") || sev.contains("EMERG") || sev.contains("ALERT")) 
+        color = QColor("#ff4d4d"); 
+    else if (sev.contains("WARNING")) 
+        color = QColor("orange");
 
-    for (int i=0; i<6; i++) {
+    // Apply color to all 7 columns
+    for (int i=0; i<7; i++) {
         logTable->item(row, i)->setForeground(color);
     }
     
-    // Limitare rânduri pentru performanță
     if (logTable->rowCount() > 200) logTable->removeRow(200);
 }
-
 
 void MainWindow::sendSearchRequest() {
     if (socket->state() != QAbstractSocket::ConnectedState) return;
 
-    // 1. Build JSON Request
     QJsonObject searchObj;
     searchObj["keyword"] = searchBar->text();
     searchObj["severity"] = severityFilter->currentText();
@@ -239,16 +230,14 @@ void MainWindow::sendSearchRequest() {
     QJsonDocument doc(searchObj);
     QByteArray payload = doc.toJson(QJsonDocument::Compact);
 
-    // 2. Send Header + Payload
     AMPHeader header;
     header.version = 1;
-    header.message_type = CMD_SEARCH; // Ensure CMD_SEARCH is defined in protocol.h (value 4)
+    header.message_type = CMD_SEARCH; 
     header.reserved = 0;
     header.payload_length = qToBigEndian((uint32_t)payload.size());
 
     socket->write((char*)&header, sizeof(header));
     socket->write(payload);
     
-    // Curăță tabelul pentru a afișa rezultatele
     logTable->setRowCount(0);
 }

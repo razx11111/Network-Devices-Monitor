@@ -9,6 +9,7 @@
 #include <QLineEdit>      
 #include <QPushButton>    
 #include <QComboBox>
+#include <QVBoxLayout> // Added missing include
 
 #include "protocol.h"
 
@@ -20,7 +21,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void attemptConnection(); // Renamed from connectToServer
+    void attemptConnection();
     void onConnected();
     void onDisconnected();    
     void onReadyRead();
@@ -30,16 +31,20 @@ private slots:
 private:
     void setupUI();
     void processJson(const QByteArray &data);
-    void addLogEntry(const QString &ts, const QString &src, const QString &pid, const QString &sev, const QString &app, const QString &msg);
+    
+    void addLogEntry(const QString &ts, const QString &src, const QString &pid, 
+                     const QString &fac, const QString &sev, const QString &app, const QString &msg);
 
     QTcpSocket *socket;
     QTimer *reconnectTimer;   
     QTableWidget *logTable;
     QLabel *statusLabel;
     QByteArray buffer;
+    
+    // UI Elements
     QLineEdit *searchBar;
     QComboBox *severityFilter;
     QPushButton *searchButton;
 };
 
-#endif 
+#endif

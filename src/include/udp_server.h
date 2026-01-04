@@ -4,7 +4,9 @@
 #include <string>
 #include <functional>
 
-using SyslogHandler = std::function<void(std::string, std::string, std::string, std::string, std::string)>;
+using namespace std;
+
+using SyslogHandler = std::function<void(string, string, string, string, string, string)>;
 
 class UDPSyslogServer {
 private:

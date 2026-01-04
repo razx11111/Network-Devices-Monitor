@@ -18,6 +18,7 @@ bool SQLiteManager::init_database() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL,
             hostname TEXT,
+            facility TEXT,
             severity TEXT,
             application TEXT,
             message TEXT,
@@ -42,6 +43,7 @@ bool SQLiteManager::init_database() {
 
 int SQLiteManager::insert_log(const std::string& timestamp,
                                    const std::string& hostname,
+                                   const std::string& facility, // <-- NEW
                                    const std::string& severity,
                                    const std::string& application,
                                    const std::string& message,
@@ -50,8 +52,8 @@ int SQLiteManager::insert_log(const std::string& timestamp,
     std::lock_guard<std::mutex> lock(db_mutex);
     
     const char* sql = R"(
-        INSERT INTO logs (timestamp, hostname, severity, application, message, pid, source_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO logs (timestamp, hostname, facility, severity, application, message, pid, source_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     )";
     
     sqlite3_stmt* stmt;
@@ -62,11 +64,12 @@ int SQLiteManager::insert_log(const std::string& timestamp,
     
     sqlite3_bind_text(stmt, 1, timestamp.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, hostname.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, severity.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 4, application.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 5, message.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 6, pid.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 7, source_type.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, facility.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, severity.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, application.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, message.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 7, pid.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 8, source_type.c_str(), -1, SQLITE_TRANSIENT);
     
     int result = sqlite3_step(stmt);
     int last_id = -1;
@@ -85,9 +88,9 @@ std::vector<LogEntry> SQLiteManager::search_logs(std::string keyword, std::strin
     std::lock_guard<std::mutex> lock(db_mutex);
     std::vector<LogEntry> results;
     
-    std::string sql = "SELECT timestamp, hostname, pid, severity, application, message FROM logs WHERE 1=1";
+    // Updated SELECT query
+    std::string sql = "SELECT timestamp, hostname, pid, facility, severity, application, message FROM logs WHERE 1=1";
 
-    // Adăugare filtre dinamic
     if (!keyword.empty()) {
         sql += " AND message LIKE '%" + keyword + "%'";
     }
@@ -95,32 +98,22 @@ std::vector<LogEntry> SQLiteManager::search_logs(std::string keyword, std::strin
         sql += " AND severity='" + severity_filter + "'";
     }
     
-    // Sortare și limitare
     sql += " ORDER BY id DESC LIMIT " + (limit.empty() ? "100" : limit);
 
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, 0) == SQLITE_OK) {
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             LogEntry entry;
-            // Verificăm dacă coloana nu este NULL înainte de cast
-            const char* ts = (const char*)sqlite3_column_text(stmt, 0);
-            const char* host = (const char*)sqlite3_column_text(stmt, 1);
-            const char* pid = (const char*)sqlite3_column_text(stmt, 2);
-            const char* sev = (const char*)sqlite3_column_text(stmt, 3);
-            const char* app = (const char*)sqlite3_column_text(stmt, 4);
-            const char* msg = (const char*)sqlite3_column_text(stmt, 5);
-
-            entry.timestamp = ts ? ts : "";
-            entry.hostname  = host ? host : "";
-            entry.pid       = pid ? pid : "";
-            entry.severity  = sev ? sev : "";
-            entry.app       = app ? app : "";
-            entry.message   = msg ? msg : "";
+            entry.timestamp = (const char*)sqlite3_column_text(stmt, 0) ? (const char*)sqlite3_column_text(stmt, 0) : "";
+            entry.hostname  = (const char*)sqlite3_column_text(stmt, 1) ? (const char*)sqlite3_column_text(stmt, 1) : "";
+            entry.pid       = (const char*)sqlite3_column_text(stmt, 2) ? (const char*)sqlite3_column_text(stmt, 2) : "";
+            entry.facility  = (const char*)sqlite3_column_text(stmt, 3) ? (const char*)sqlite3_column_text(stmt, 3) : ""; // NEW
+            entry.severity  = (const char*)sqlite3_column_text(stmt, 4) ? (const char*)sqlite3_column_text(stmt, 4) : "";
+            entry.app       = (const char*)sqlite3_column_text(stmt, 5) ? (const char*)sqlite3_column_text(stmt, 5) : "";
+            entry.message   = (const char*)sqlite3_column_text(stmt, 6) ? (const char*)sqlite3_column_text(stmt, 6) : "";
             
             results.push_back(entry);
         }
-    } else {
-        std::cerr << "[DB Error] Search failed: " << sqlite3_errmsg(db) << std::endl;
     }
     sqlite3_finalize(stmt);
     return results;

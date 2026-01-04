@@ -358,15 +358,20 @@
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QTableWidget
+ mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QVBoxLayout
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractitemdelegate.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractitemview.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractscrollarea.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractslider.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractspinbox.h
+ mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qboxlayout.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h
+ mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h
+ mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h
+ mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlineedit.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmainwindow.h
  mdp:/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h

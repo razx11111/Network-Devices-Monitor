@@ -180,6 +180,8 @@ void raspunde(void *arg) {
                 {
                     string timestamp = extract_field(payloadStr, "timestamp");
                     string hostname = extract_field(payloadStr, "hostname");
+                    string facility = extract_field(payloadStr, "facility");
+                    if (facility.empty()) facility = "USER";
                     string severity = extract_field(payloadStr, "severity");
                     string app = extract_field(payloadStr, "application");
                     string msg = extract_field(payloadStr, "message");
@@ -187,7 +189,7 @@ void raspunde(void *arg) {
 
                     if (app.empty()) app = "System";
 
-                    g_db_manager->insert_log(timestamp, hostname, severity, app, msg, pid, "agent");
+                    g_db_manager->insert_log(timestamp, hostname, facility, severity, app, msg, pid, "agent");
                     cout << "[Thread " << tdL.idThread << "] LOG_DATA saved." << endl;
                     
                     pthread_mutex_unlock(&mlock); 
@@ -216,6 +218,7 @@ void raspunde(void *arg) {
                     jsonResp += "\"timestamp\":\"" + json_escape(logs[i].timestamp) + "\",";
                     jsonResp += "\"hostname\":\"" + json_escape(logs[i].hostname) + "\",";
                     jsonResp += "\"pid\":\"" + json_escape(logs[i].pid) + "\",";
+                    jsonResp += "\"facility\":\"" + json_escape(logs[i].facility) + "\",";
                     jsonResp += "\"severity\":\"" + json_escape(logs[i].severity) + "\",";
                     jsonResp += "\"application\":\"" + json_escape(logs[i].app) + "\",";
                     jsonResp += "\"message\":\"" + json_escape(logs[i].message) + "\"";
