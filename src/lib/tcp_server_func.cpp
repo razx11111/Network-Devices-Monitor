@@ -55,36 +55,36 @@ void broadcast_to_dashboards(string jsonLog) {
 }
 
 static string extract_field(const string& json, const string& key) {
-    // 1. Cautam cheia cu ghilimele: "key"
+    
     string searchKey = "\"" + key + "\"";
     size_t keyPos = json.find(searchKey);
     
-    if (keyPos == string::npos) return ""; // Cheia nu exista
+    if (keyPos == string::npos) return ""; 
 
-    // 2. Cautam doua puncte ':' dupa cheie
+    
     size_t colonPos = json.find(':', keyPos + searchKey.length());
     if (colonPos == string::npos) return "";
 
-    // 3. Cautam inceputul valorii (sarim peste spatii)
+    
     size_t startValue = colonPos + 1;
     while (startValue < json.length() && (json[startValue] == ' ' || json[startValue] == '\t' || json[startValue] == '\n')) {
         startValue++;
     }
     if (startValue >= json.length()) return "";
 
-    // 4. Extragem valoarea
+    
     string value;
     if (json[startValue] == '"') {
-        // E un string intre ghilimele
-        startValue++; // Sarim peste prima ghilimea
+        
+        startValue++; 
         size_t endValue = startValue;
         while (endValue < json.length()) {
-            if (json[endValue] == '"' && json[endValue - 1] != '\\') break; // Ghilimeaua de final
+            if (json[endValue] == '"' && json[endValue - 1] != '\\') break; 
             endValue++;
         }
         value = json.substr(startValue, endValue - startValue);
     } else {
-        // E un numar sau boolean sau string fara ghilimele (pana la virgula sau })
+        
         size_t endValue = startValue;
         while (endValue < json.length() && json[endValue] != ',' && json[endValue] != '}') {
             endValue++;
@@ -149,11 +149,11 @@ void raspunde(void *arg) {
                 string timestamp = extract_field(payloadStr, "timestamp");
                 string hostname = extract_field(payloadStr, "hostname");
                 
-                // 1. Auto-discover: PENDING (ca să nu suprascrie ACTIVE)
+                
                 g_db_manager->register_or_update_source(hostname, "PENDING");
                 g_db_manager->update_heartbeat(hostname);
                 
-                // 2. Verifică permisiune
+                
                 if (g_db_manager->is_source_blocked(hostname)) {
                     responseMsg = "{\"status\":\"error\",\"message\":\"Blocked\"}";
                 } else {
@@ -217,9 +217,9 @@ void raspunde(void *arg) {
                 responseMsg = jsonResp;
                 break;
             }
-            case CMD_GET_AGENTS: // 6
+            case CMD_GET_AGENTS: 
             {
-                cout << "[DEBUG] SERVER: Processing CMD_GET_AGENTS..." << endl; // <--- ADAUGA
+                cout << "[DEBUG] SERVER: Processing CMD_GET_AGENTS..." << endl; 
                 auto list = g_db_manager->get_all_sources();
                 
                 string jsonResp = "{\"status\":\"ok\",\"agents\":[";
@@ -236,26 +236,26 @@ void raspunde(void *arg) {
                 }
                 jsonResp += "]}";
                 
-                cout << "[DEBUG] SERVER: Sending Agent List: " << jsonResp << endl; // <--- ADAUGA
+                cout << "[DEBUG] SERVER: Sending Agent List: " << jsonResp << endl; 
                 responseMsg = jsonResp;
                 break;
             }
 
-            case CMD_UPDATE_AGENT: // STATUS CHANGE
+            case CMD_UPDATE_AGENT: 
             {
                 string ip = extract_field(payloadStr, "ip");
                 string status = extract_field(payloadStr, "status");
                 
                 if(!ip.empty()) {
-                    // Force update status (Block/Activate)
+                    
                     g_db_manager->register_or_update_source(ip, status);
                     responseMsg = "{\"status\":\"ok\"}";
                 }
                 break;
             }
-            case CMD_ADD_AGENT: // 8
+            case CMD_ADD_AGENT: 
             {
-                cout << "[DEBUG] RAW PAYLOAD RECEIVED: " << payloadStr << endl; // VEDEM CE PRIMIM
+                cout << "[DEBUG] RAW PAYLOAD RECEIVED: " << payloadStr << endl; 
 
                 string ip = extract_field(payloadStr, "ip");
                 string type = extract_field(payloadStr, "type"); 
@@ -266,7 +266,7 @@ void raspunde(void *arg) {
                     cout << "[ERROR] IP Extraction failed! Agent not added." << endl;
                     responseMsg = "{\"status\":\"error\",\"message\":\"Invalid IP\"}";
                 } else {
-                    // 1. Add as ACTIVE immediately
+                    
                     g_db_manager->register_or_update_source(ip, "ACTIVE");
                     cout << "[SUCCESS] Added agent to DB: " << ip << endl;
                     
@@ -315,7 +315,7 @@ bool read_n_bytes(int socket, void* buffer, int n) {
 void run_simulation(string hostname) {
     cout << "[SIMULATION] STARTED for agent: " << hostname << endl;
     
-    // Lista de mesaje random
+    
     vector<string> messages = {
         "User admin logged in successfully via SSH",
         "Failed password for invalid user root from 192.168.1.100",
@@ -338,32 +338,32 @@ void run_simulation(string hostname) {
         
         g_db_manager->update_heartbeat(hostname);
 
-        // 1. Verifică statusul din DB
-        // Atenție: Dacă agentul e șters sau blocat, oprim simularea.
+        
+        
         bool blocked = g_db_manager->is_source_blocked(hostname);
         if (blocked) {
             cout << "[SIMULATION] Agent " << hostname << " is BLOCKED. Pausing simulation..." << endl;
-            // Nu oprim thread-ul de tot (break), ci doar așteptăm, poate îl deblochează adminul
+            
             this_thread::sleep_for(chrono::seconds(5));
             continue;
         }
 
-        // 2. Alege un mesaj random
+        
         int idx = rand() % messages.size();
         string msg = messages[idx];
         string sev = severities[idx];
         string fac = facilities[idx];
         
-        // Timestamp curent
+        
         time_t now = time(0);
         char ts[64];
         strftime(ts, sizeof(ts), "%b %d %H:%M:%S", localtime(&now));
         
-        // 3. Inserează în DB
-        // IMPORTANT: Simularea scrie direct în DB ca un agent real acceptat
+        
+        
         g_db_manager->insert_log(ts, hostname, fac, sev, "SimAgent", msg, "1337", "simulation");
         
-        // 4. Trimite la Dashboard (Live Update)
+        
         string jsonLog = "{";
         jsonLog += "\"timestamp\":\"" + string(ts) + "\",";
         jsonLog += "\"hostname\":\"" + hostname + "\",";
@@ -372,7 +372,7 @@ void run_simulation(string hostname) {
         jsonLog += "\"severity\":\"" + sev + "\",";
         jsonLog += "\"application\":\"SimAgent\",";
         jsonLog += "\"message\":\"" + msg + "\""; 
-        jsonLog += "}"; // Nu mai punem "source":"UDP", lasam standard
+        jsonLog += "}"; 
 
         broadcast_to_dashboards(jsonLog);
         

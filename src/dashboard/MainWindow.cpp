@@ -16,7 +16,7 @@
 using namespace std;
 
 MainWindow::MainWindow(QString user, QString pass, QWidget *parent) 
-    : QMainWindow(parent), m_username(user), m_password(pass), socket(nullptr),          // <--- INIT NULL
+    : QMainWindow(parent), m_username(user), m_password(pass), socket(nullptr),          
       reconnectTimer(nullptr),  
       statsTimer(nullptr),      
       agentsTimer(nullptr),   
@@ -30,22 +30,22 @@ MainWindow::MainWindow(QString user, QString pass, QWidget *parent)
     
     reconnectTimer = new QTimer(this);
     connect(reconnectTimer, &QTimer::timeout, this, &MainWindow::attemptConnection);
-    reconnectTimer->start(2000); // Verifică la fiecare 2 secunde
-    // --------------------------------------
+    reconnectTimer->start(2000); 
+    
 
     connect(socket, &QTcpSocket::connected, this, &MainWindow::onConnected);
     connect(socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
     connect(socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
-    // Nu mai avem nevoie de onSocketError pentru a reporni timerul, el rulează mereu
+    
 
-    // Încercare imediată
+    
     attemptConnection();
 }
 
 MainWindow::~MainWindow() {}
 
 void MainWindow::setupUI() {
-    // 1. Aplica Tema Moderna
+    
     applyModernStyle();
 
     setWindowTitle("Network Monitor v3.0 - Sentinel");
@@ -54,25 +54,25 @@ void MainWindow::setupUI() {
     QTabWidget *tabWidget = new QTabWidget(this);
     setCentralWidget(tabWidget);
 
-    // ============================================
-    // TAB 1: DASHBOARD
-    // ============================================
+    
+    
+    
     QWidget *dashTab = new QWidget();
     QVBoxLayout *dashLayout = new QVBoxLayout(dashTab);
-    dashLayout->setContentsMargins(20, 20, 20, 20); // Spatiere mai aerisita
+    dashLayout->setContentsMargins(20, 20, 20, 20); 
     dashLayout->setSpacing(15);
 
-    // --- Stats Box ---
+    
     statsBox = new QGroupBox("LIVE TELEMETRY", dashTab);
     statsBox->setFixedHeight(140);
     
     QHBoxLayout *statsLayout = new QHBoxLayout();
     
-    // Helper pentru carduri de statistici
+    
     auto createStat = [](QString title, QString colorCode) {
         QLabel *lbl = new QLabel("0", nullptr);
         lbl->setAlignment(Qt::AlignCenter);
-        // Stil specific pentru numere mari
+        
         lbl->setStyleSheet("font-size: 28px; font-weight: bold; color: " + colorCode + ";");
         
         QLabel *titleLbl = new QLabel(title);
@@ -91,33 +91,33 @@ void MainWindow::setupUI() {
         return qMakePair(lbl, card);
     };
 
-    auto infoPair = createStat("NORMAL ACTIVITY", "#4CAF50"); // Green
+    auto infoPair = createStat("NORMAL ACTIVITY", "#4CAF50"); 
     lblInfoCount = infoPair.first;
     
-    auto warnPair = createStat("WARNINGS", "#FFC107"); // Amber
+    auto warnPair = createStat("WARNINGS", "#FFC107"); 
     lblWarnCount = warnPair.first;
     
-    auto errPair = createStat("CRITICAL ERRORS", "#FF5252"); // Red
+    auto errPair = createStat("CRITICAL ERRORS", "#FF5252"); 
     lblErrCount = errPair.first;
 
     statsLayout->addWidget(infoPair.second);
     statsLayout->addWidget(warnPair.second);
     statsLayout->addWidget(errPair.second);
 
-    // Tabelul mic din dreapta (Top Sources)
+    
     topSourcesTable = new QTableWidget(dashTab);
     topSourcesTable->setColumnCount(2);
     topSourcesTable->setHorizontalHeaderLabels({"TOP SOURCE", "HITS"});
     topSourcesTable->verticalHeader()->setVisible(false);
     topSourcesTable->setFixedWidth(350);
     topSourcesTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    topSourcesTable->setStyleSheet("background-color: #252526; border-radius: 8px; border: 1px solid #333;"); // Card style
+    topSourcesTable->setStyleSheet("background-color: #252526; border-radius: 8px; border: 1px solid #333;"); 
     
     statsLayout->addWidget(topSourcesTable);
     statsBox->setLayout(statsLayout);
     dashLayout->addWidget(statsBox);
 
-    // --- Search Bar Area ---
+    
     QHBoxLayout *searchLayout = new QHBoxLayout();
     
     searchBar = new QLineEdit(dashTab);
@@ -144,26 +144,26 @@ void MainWindow::setupUI() {
     searchLayout->addWidget(searchButton);
     dashLayout->addLayout(searchLayout);
 
-    // --- Log Table ---
+    
     logTable = new QTableWidget(dashTab);
     logTable->setColumnCount(7);
     logTable->setHorizontalHeaderLabels({"TIME", "SOURCE", "PID", "FACILITY", "SEVERITY", "APP", "MESSAGE"});
-    logTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive); // User can resize
-    logTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Stretch); // Message stretches
+    logTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive); 
+    logTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Stretch); 
     logTable->verticalHeader()->setVisible(false);
-    logTable->setShowGrid(false); // Mai curat fara gridlines
-    logTable->setAlternatingRowColors(true); // Randuri alternative
+    logTable->setShowGrid(false); 
+    logTable->setAlternatingRowColors(true); 
     
-    // Style specific pentru row colors
+    
     logTable->setStyleSheet(logTable->styleSheet() + "QTableWidget { alternate-background-color: #262626; }");
 
     dashLayout->addWidget(logTable);
 
     tabWidget->addTab(dashTab, QIcon(), "MONITOR DASHBOARD");
 
-    // ============================================
-    // TAB 2: AGENT MANAGEMENT
-    // ============================================
+    
+    
+    
     QWidget *agentTab = new QWidget();
     QVBoxLayout *agentLayout = new QVBoxLayout(agentTab);
     agentLayout->setContentsMargins(40, 40, 40, 40);
@@ -186,23 +186,23 @@ void MainWindow::setupUI() {
     
     agentLayout->addWidget(agentTable);
     
-    // Buttons Area
+    
     QHBoxLayout *btnLayout = new QHBoxLayout();
     btnLayout->setSpacing(15);
     
     btnAddAgent = new QPushButton("✚ DEPLOY SIMULATOR", agentTab);
     btnAddAgent->setCursor(Qt::PointingHandCursor);
-    btnAddAgent->setStyleSheet("background-color: #007acc; font-size: 14px; padding: 12px;"); // Blue
+    btnAddAgent->setStyleSheet("background-color: #007acc; font-size: 14px; padding: 12px;"); 
     connect(btnAddAgent, &QPushButton::clicked, this, &MainWindow::onAddAgent);
 
     btnActivate = new QPushButton("✔ AUTHORIZE AGENT", agentTab);
     btnActivate->setCursor(Qt::PointingHandCursor);
-    btnActivate->setStyleSheet("background-color: #2ea043; font-size: 14px; padding: 12px;"); // GitHub Green
+    btnActivate->setStyleSheet("background-color: #2ea043; font-size: 14px; padding: 12px;"); 
     connect(btnActivate, &QPushButton::clicked, this, &MainWindow::onActivateAgent);
 
     btnBlock = new QPushButton("✖ REVOKE ACCESS", agentTab);
     btnBlock->setCursor(Qt::PointingHandCursor);
-    btnBlock->setStyleSheet("background-color: #da3633; font-size: 14px; padding: 12px;"); // Red
+    btnBlock->setStyleSheet("background-color: #da3633; font-size: 14px; padding: 12px;"); 
     connect(btnBlock, &QPushButton::clicked, this, &MainWindow::onBlockAgent);
 
     btnLayout->addWidget(btnAddAgent);
@@ -214,19 +214,19 @@ void MainWindow::setupUI() {
 }
 
 void MainWindow::attemptConnection() {
-    // Dacă suntem deja conectați, nu facem nimic
+    
     if (socket->state() == QAbstractSocket::ConnectedState) {
         return;
     }
     
-    // Dacă suntem în curs de conectare, așteptăm
+    
     if (socket->state() == QAbstractSocket::HostLookupState || 
         socket->state() == QAbstractSocket::ConnectingState) {
         statusLabel->setText("Status: Negotiating...");
         return;
     }
 
-    // Altfel, încercăm conectarea
+    
     statusLabel->setText("Status: Connecting to Server...");
     socket->connectToHost("127.0.0.1", 9999);
 }
@@ -245,35 +245,35 @@ void MainWindow::onConnected() {
     socket->write((char*)&header, sizeof(header));
     socket->write(payload);
     
-    // NU mai apelam requestAgents() aici!
+    
 }
 
 void MainWindow::onDisconnected() {
     statusLabel->setText("Status: Disconnected. Retrying...");
     statusLabel->setStyleSheet("color: red; font-weight: bold;");
-    // Timerul reconnectTimer va prinde faptul ca socket-ul e Unconnected si va incerca din nou
+    
 }
 
 void MainWindow::onSocketError(QAbstractSocket::SocketError) {
-    // Doar afisam eroarea, nu oprim logica
+    
     qDebug() << "Socket Error:" << socket->errorString();
 }
 
 void MainWindow::onReadyRead() {
     buffer.append(socket->readAll());
     
-    // Buclă de procesare pachete
+    
     while (buffer.size() >= (int)sizeof(AMPHeader)) {
         AMPHeader *header = reinterpret_cast<AMPHeader*>(buffer.data());
         uint32_t payloadLen = qFromBigEndian(header->payload_length);
         
-        if (buffer.size() < (int)(sizeof(AMPHeader) + payloadLen)) return; // Așteptăm restul datelor
+        if (buffer.size() < (int)(sizeof(AMPHeader) + payloadLen)) return; 
 
-        buffer.remove(0, sizeof(AMPHeader)); // Scoatem header
-        QByteArray payload = buffer.left(payloadLen); // Luăm datele
-        buffer.remove(0, payloadLen); // Scoatem datele din buffer
+        buffer.remove(0, sizeof(AMPHeader)); 
+        QByteArray payload = buffer.left(payloadLen); 
+        buffer.remove(0, payloadLen); 
         
-        qDebug() << "[CLIENT] RX Payload:" << payload; // <--- ADAUGA
+        qDebug() << "[CLIENT] RX Payload:" << payload; 
         processJson(payload);
     }
 }
@@ -288,7 +288,7 @@ void MainWindow::requestAgents() {
 void MainWindow::onActivateAgent() {
     int row = agentTable->currentRow();
     if (row < 0) return;
-    QString ip = agentTable->item(row, 0)->text(); // IP din Col 0
+    QString ip = agentTable->item(row, 0)->text(); 
 
     QJsonObject obj;
     obj["ip"] = ip;
@@ -300,7 +300,7 @@ void MainWindow::onActivateAgent() {
     socket->write((char*)&h, sizeof(h));
     socket->write(p);
     
-    // Fortam refresh rapid
+    
     QTimer::singleShot(200, this, &MainWindow::requestAgents);
 }
 
@@ -383,7 +383,7 @@ void MainWindow::processJson(const QByteArray &data) {
                 btnActivate->setEnabled(true);
                 btnBlock->setEnabled(true);
                 
-                // AICI cerem datele
+                
                 requestAgents();
                 
                 if (statsTimer) { 
@@ -405,28 +405,28 @@ void MainWindow::processJson(const QByteArray &data) {
                 agentsTimer->start(2000);
             } else {
                 statusLabel->setText("🟡 READ-ONLY MODE");
-                // Viewer mode
+                
                 btnAddAgent->setEnabled(false);
                 btnActivate->setEnabled(false);
                 btnBlock->setEnabled(false);
-                requestStats(); // Viewer vede doar stats si logs
+                requestStats(); 
             }
         });
         return;
     }
 
-    // --- AGENTS LIST ---
+    
     if (obj.contains("agents")) {
         QJsonArray agents = obj["agents"].toArray();
         
-        // DEBUG: Afiseaza un popup daca lista nu e goala (sa vedem daca ajunge ceva)
+        
         if (agents.size() > 0) {
-            // Poti decomenta linia de mai jos daca vrei confirmare vizuala ca datele au ajuns
-            // QMessageBox::information(this, "Debug Data", "Received " + QString::number(agents.size()) + " agents from server.");
+            
+            
         }
 
         QMetaObject::invokeMethod(this, [=]() {
-            // 1. Asigură-te că avem 3 coloane
+            
             if (agentTable->columnCount() != 3) {
                 agentTable->setColumnCount(3);
                 agentTable->setHorizontalHeaderLabels({"Source IP", "Status", "Last Seen"});
@@ -440,22 +440,22 @@ void MainWindow::processJson(const QByteArray &data) {
                 int r = agentTable->rowCount();
                 agentTable->insertRow(r);
                 
-                // Col 0: IP (Fortam text ALB)
+                
                 QTableWidgetItem *ipItem = new QTableWidgetItem(a["ip"].toString());
-                ipItem->setForeground(Qt::white); // <--- FIX VIZUAL
+                ipItem->setForeground(Qt::white); 
                 agentTable->setItem(r, 0, ipItem);
                 
-                // Col 1: Status
+                
                 QTableWidgetItem *statusItem = new QTableWidgetItem(a["status"].toString());
-                statusItem->setForeground(Qt::white); // <--- FIX VIZUAL
+                statusItem->setForeground(Qt::white); 
                 if (a["status"].toString() == "ACTIVE") statusItem->setBackground(QColor("#28a745"));
                 else if (a["status"].toString() == "PENDING") statusItem->setBackground(QColor("orange"));
                 else statusItem->setBackground(QColor("#dc3545"));
                 agentTable->setItem(r, 1, statusItem);
 
-                // Col 2: Last Seen (Fortam text ALB)
+                
                 QTableWidgetItem *seenItem = new QTableWidgetItem(a["last_seen"].toString());
-                seenItem->setForeground(Qt::white); // <--- FIX VIZUAL
+                seenItem->setForeground(Qt::white); 
                 agentTable->setItem(r, 2, seenItem);
             }
             if(currentRow >= 0 && currentRow < agentTable->rowCount()) agentTable->selectRow(currentRow);
@@ -506,7 +506,7 @@ void MainWindow::processJson(const QByteArray &data) {
         return;
     }
 
-    // Live Logs
+    
     if (obj.contains("message") && obj.contains("hostname")) {
         QMetaObject::invokeMethod(this, [=]() {
              addLogEntry(obj["timestamp"].toString(), obj["hostname"].toString(), obj["pid"].toString(), 
@@ -558,17 +558,17 @@ void MainWindow::sendSearchRequest() {
 
 void MainWindow::applyModernStyle() {
     QString style = R"(
-        /* --- GENERAL --- */
+       
         QMainWindow {
-            background-color: #1e1e1e; /* Dark Grey (VS Code style) */
+            background-color: #1e1e1e;
         }
         QWidget {
             font-family: 'Segoe UI', 'Roboto', sans-serif;
             font-size: 14px;
-            color: #d4d4d4; /* Off-white text */
+            color: #d4d4d4;
         }
         
-        /* --- TABS --- */
+       
         QTabWidget::pane {
             border: 1px solid #333333;
             background: #252526;
@@ -586,14 +586,14 @@ void MainWindow::applyModernStyle() {
         QTabBar::tab:selected {
             background: #1e1e1e;
             color: #ffffff;
-            border-bottom: 2px solid #007acc; /* Blue accent */
+            border-bottom: 2px solid #007acc;
         }
         QTabBar::tab:hover {
             background: #3e3e42;
             color: white;
         }
 
-        /* --- BUTTONS --- */
+       
         QPushButton {
             background-color: #0e639c;
             color: white;
@@ -613,7 +613,7 @@ void MainWindow::applyModernStyle() {
             color: #555;
         }
 
-        /* --- INPUTS & COMBOBOX --- */
+       
         QLineEdit, QComboBox {
             background-color: #3c3c3c;
             border: 1px solid #555;
@@ -626,7 +626,7 @@ void MainWindow::applyModernStyle() {
             border: 1px solid #007acc;
         }
         
-        /* --- TABLES --- */
+       
         QTableWidget {
             background-color: #1e1e1e;
             gridline-color: #333;
@@ -651,7 +651,7 @@ void MainWindow::applyModernStyle() {
             border: none;
         }
 
-        /* --- SCROLLBARS (Modern Slim) --- */
+       
         QScrollBar:vertical {
             border: none;
             background: #1e1e1e;
@@ -667,7 +667,7 @@ void MainWindow::applyModernStyle() {
             height: 0px;
         }
 
-        /* --- GROUP BOX --- */
+       
         QGroupBox {
             border: 1px solid #444;
             border-radius: 6px;

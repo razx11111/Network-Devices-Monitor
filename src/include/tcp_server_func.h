@@ -7,11 +7,11 @@
 using namespace std;
 
 struct thData {
-    int idThread; // thread id
-    int cl;       // client descriptor
+    int idThread; 
+    int cl;       
 };
 
-// Expose this so main.cpp (UDP) can call it
+
 void broadcast_to_dashboards(string jsonLog);
 
 void *treat(void *arg);

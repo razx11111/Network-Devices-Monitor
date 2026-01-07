@@ -54,7 +54,7 @@ public:
     
     void register_or_update_source(const string& ip, const string& status);
     
-    // Updates ONLY Last Seen (Heartbeat)
+    
     void update_heartbeat(const string& ip);
     vector<AgentSource> get_all_sources();
     bool is_source_blocked(const string& ip);
