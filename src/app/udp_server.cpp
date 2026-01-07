@@ -7,7 +7,9 @@
 #include <cstring>
 #include <regex>
 
-std::string get_facility_name(int pri) {
+using namespace std;
+
+string get_facility_name(int pri) {
     int facility = pri >> 3; 
     const char* facilities[] = {
         "KERNEL", "USER", "MAIL", "DAEMON", "AUTH", "SYSLOG", "LPR", "NEWS",
@@ -51,7 +53,7 @@ void UDPSyslogServer::start() {
         return;
     }
     
-    std::cout << "[UDP Syslog] Listening on port " << port << std::endl;
+    cout << "[UDP Syslog] Listening on port " << port << endl;
     running = true;
     
     char buffer[2048];
@@ -64,8 +66,8 @@ void UDPSyslogServer::start() {
         
         if (n > 0) {
             buffer[n] = '\0';
-            std::string message(buffer);
-            std::string source_ip = inet_ntoa(client_addr.sin_addr);
+            string message(buffer);
+            string source_ip = inet_ntoa(client_addr.sin_addr);
             
             if (message_handler) {
                 parse_syslog(message, source_ip);
@@ -78,28 +80,28 @@ void UDPSyslogServer::stop() {
     running = false;
 }
 
-void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& source_ip) {
+void UDPSyslogServer::parse_syslog(const string& raw_message, string& source_ip) {
     
-    std::regex syslog_rfc5424(R"(^<(\d|\d{2}|1[1-8]\d|19[01])>(\d{1,2})\s(-|([12]\d{3})-(0\d|1[012])-([012]\d|3[01])T([01]\d|2[0-4]):([0-5]\d):([0-5]\d|60)(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2}))\s([\S]{1,255})\s([\S]{1,48})\s([\S]{1,128})\s([\S]{1,32})\s(-|(?:\[(?:[^\]\\]|\\.)*\])+)(?:\s(.+))?$)"); //credite catre un tip de pe regex101.com
-    std::regex syslog_rfc3164(R"(<(\d+)>(\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+(\S+):\s*(.+))");
-    std::regex fallback(R"(^<(\d+)>(.+))");
-    std::smatch matches;
+    regex syslog_rfc5424(R"(^<(\d|\d{2}|1[1-8]\d|19[01])>(\d{1,2})\s(-|([12]\d{3})-(0\d|1[012])-([012]\d|3[01])T([01]\d|2[0-4]):([0-5]\d):([0-5]\d|60)(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2}))\s([\S]{1,255})\s([\S]{1,48})\s([\S]{1,128})\s([\S]{1,32})\s(-|(?:\[(?:[^\]\\]|\\.)*\])+)(?:\s(.+))?$)"); //credite catre un user de pe regex101.com
+    regex syslog_rfc3164(R"(<(\d+)>(\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+(\S+):\s*(.+))");
+    regex fallback(R"(^<(\d+)>(.+))");
+    smatch matches;
 
     const char* severity_names[] = {
             "EMERGENCY", "ALERT", "CRITICAL", "ERROR", 
             "WARNING", "NOTICE", "INFO", "DEBUG"
     };
 
-    if (std::regex_search(raw_message, matches, syslog_rfc5424)) {
-        // Parse RFC 5424
-        int pri = std::stoi(matches[1]);
-        std::string facility = get_facility_name(pri);
-        std::string severity = severity_names[pri & 0x07];
+    if (regex_search(raw_message, matches, syslog_rfc5424)) {
         
-        std::string timestamp = matches[3];
-        std::string hostname  = matches[4];
-        std::string app_name  = matches[5]; 
-        std::string message   = matches[9].matched ? matches[9].str() : "";
+        int pri = stoi(matches[1]);
+        string facility = get_facility_name(pri);
+        string severity = severity_names[pri & 0x07];
+        
+        string timestamp = matches[3];
+        string hostname  = matches[4];
+        string app_name  = matches[5]; 
+        string message   = matches[9].matched ? matches[9].str() : "";
 
         if (message_handler) {
             message_handler(timestamp, hostname, facility, severity, app_name, message);
@@ -107,15 +109,15 @@ void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& 
         return;
     }
     
-    if (std::regex_search(raw_message, matches, syslog_rfc3164)) {
-        int pri = std::stoi(matches[1]);
-        std::string facility = get_facility_name(pri);
-        std::string severity = severity_names[pri & 0x07];
+    if (regex_search(raw_message, matches, syslog_rfc3164)) {
+        int pri = stoi(matches[1]);
+        string facility = get_facility_name(pri);
+        string severity = severity_names[pri & 0x07];
 
-        std::string timestamp = matches[2];
-        std::string hostname  = matches[3];
-        std::string tag       = matches[4]; 
-        std::string message   = matches[5];
+        string timestamp = matches[2];
+        string hostname  = matches[3];
+        string tag       = matches[4]; 
+        string message   = matches[5];
 
         if (message_handler) {
             message_handler(timestamp, hostname, facility, severity, tag, message);
@@ -125,18 +127,18 @@ void UDPSyslogServer::parse_syslog(const std::string& raw_message, std::string& 
 
     if (regex_search(raw_message, matches, fallback)) {
         int pri = stoi(matches[1]);
-        std::string facility = get_facility_name(pri);
-        std::string sev = severity_names[pri & 0x07];
-        std::string content = matches[2];
+        string facility = get_facility_name(pri);
+        string sev = severity_names[pri & 0x07];
+        string content = matches[2];
 
-        // Get current time as timestamp since we couldn't parse one
+        
         time_t now = time(0);
         char ts_buf[80];
         strftime(ts_buf, sizeof(ts_buf), "%b %d %H:%M:%S", localtime(&now));
         
-        // Use sender IP as hostname, and "Unknown" as app
+        
         if (message_handler) {
-            message_handler(std::string(ts_buf), source_ip, facility, sev, "RawSyslog", content);
+            message_handler(string(ts_buf), source_ip, facility, sev, "RawSyslog", content);
         }
         return;
     }

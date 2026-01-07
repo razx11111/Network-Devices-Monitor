@@ -5,45 +5,59 @@
 #include <string>
 #include <mutex>
 #include <vector>
-#include <map> // <--- CRITIC: Necesar pentru std::map
+#include <map> 
 
-// Structură pentru rezultatele căutării
+using namespace std;
+
+struct AgentSource {
+    string ip;
+    string status; 
+    long long last_activity;
+};
+
 struct LogEntry {
-    std::string timestamp;
-    std::string hostname;
-    std::string pid;
-    std::string facility; 
-    std::string severity;
-    std::string app;
-    std::string message;
+    string timestamp;
+    string hostname;
+    string pid;
+    string facility; 
+    string severity;
+    string app;
+    string message;
 };
 
 class SQLiteManager {
 private:
     sqlite3* db;
-    std::mutex db_mutex;
+    mutex db_mutex;
     
 public:
-    SQLiteManager(const std::string& db_path);
+    SQLiteManager(const string& db_path);
     ~SQLiteManager();
     
     bool init_database();
-    int insert_log(const std::string& timestamp,
-                       const std::string& hostname,
-                       const std::string& facility,
-                       const std::string& severity,
-                       const std::string& application,
-                       const std::string& message,
-                       const std::string& pid,
-                       const std::string& source_type);
+    int insert_log(const string& timestamp,
+                       const string& hostname,
+                       const string& facility,
+                       const string& severity,
+                       const string& application,
+                       const string& message,
+                       const string& pid,
+                       const string& source_type);
     
-    // Funcția de căutare
-    std::vector<LogEntry> search_logs(std::string query, std::string severity, std::string limit);
+    vector<LogEntry> search_logs(string query, string severity, string limit);
+    map<string, int> get_severity_counts();
+    vector<pair<string, int>> get_top_sources();
+    vector<string> query_logs(const string& where_clause, int limit);
 
-    std::map<std::string, int> get_severity_counts();
+    bool validate_user(const string& username, const string& password, string& role);
+    void create_default_user(); 
     
-    // Query-uri generale
-    std::vector<std::string> query_logs(const std::string& where_clause, int limit);
+    void register_or_update_source(const string& ip, const string& status);
+    
+    // Updates ONLY Last Seen (Heartbeat)
+    void update_heartbeat(const string& ip);
+    vector<AgentSource> get_all_sources();
+    bool is_source_blocked(const string& ip);
 };
 
 #endif

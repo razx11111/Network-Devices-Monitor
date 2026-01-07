@@ -33,13 +33,12 @@ int main(int  argc, char *argv[]) {
     struct hostent *he;
 
     if ((he = gethostbyname(server_ip.c_str())) == NULL) {
-        // If DNS fails, try to parse as direct IP
         if (inet_pton(AF_INET, server_ip.c_str(), &server.sin_addr) <= 0) {
             perror("[client] Invalid server IP or Hostname resolving failed.\n");
             return 1;
         }
     } else {
-        // Copy the resolved IP from gethostbyname
+
         memcpy(&server.sin_addr, he->h_addr_list[0], he->h_length);
     }
 
@@ -55,7 +54,7 @@ int main(int  argc, char *argv[]) {
         
         string opt;
         if (!(cin >> opt)) {
-            break; // Exit loop if no input is available
+            break; 
         }
 
         string payload = "";

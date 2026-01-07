@@ -16,14 +16,12 @@
 #include "tcp_server_func.h"
 #include "SQLite_manager.h"
 
-
 SQLiteManager* g_db_manager = nullptr;
 UDPSyslogServer* g_udp_server = nullptr;
 extern int errno;
 
 using namespace std;
 
-// Helper to escape JSON strings locally for UDP
 string local_json_escape(const string& str) {
     string output;
     for (char c : str) {
@@ -41,20 +39,32 @@ int main() {
     int sd;
     int i = 0;
 
-    g_db_manager = new SQLiteManager("network_monitor.db");
+    g_db_manager = new SQLiteManager("network_monitor_V3_FINAL.db"); 
+    
     if (!g_db_manager->init_database()) {
-        cerr << "Failed to initialize database!" << endl;
+        cerr << "FATAL: Failed to initialize database!" << endl;
         return 1;
     }
-    cout << "[server] Database initialized successfully." << endl;
+    cout << "[DEBUG] Database 'network_monitor_FINAL.db' initialized." << endl;
     
     g_udp_server = new UDPSyslogServer(514); 
     g_udp_server->set_message_handler([](string ts, string host, string fac, string sev, string app, string msg) {
+
+        cout << "[UDP-RX] From: " << host << " | App: " << app << endl; 
+
         if (g_db_manager) {
-            sleep(1);
+            g_db_manager->register_or_update_source(host, "PENDING");
+            g_db_manager->update_heartbeat(host);
+
+            if (g_db_manager->is_source_blocked(host)) {
+                cout << "[UDP-BLOCK] Source " << host << " is not ACTIVE yet." << endl;
+                return; 
+            }
+
             string app_name = app;
             string pid = "0";
             size_t pid_start = app.find('[');
+
             if (pid_start != string::npos) {
                 size_t pid_end = app.find(']', pid_start);
                 if (pid_end != string::npos) {
@@ -64,9 +74,8 @@ int main() {
             }
 
             g_db_manager->insert_log(ts, host, fac, sev, app_name, msg, pid, "syslog");
-            cout << "[UDP] Log saved from " << host << " (" << fac << ")" << endl;
+            cout << "[UDP-SAVE] Log saved from " << host << endl;
 
-            // Update JSON for Dashboard
             string jsonLog = "{";
             jsonLog += "\"timestamp\":\"" + local_json_escape(ts) + "\",";
             jsonLog += "\"hostname\":\"" + local_json_escape(host) + "\",";
@@ -74,8 +83,7 @@ int main() {
             jsonLog += "\"facility\":\"" + local_json_escape(fac) + "\","; 
             jsonLog += "\"severity\":\"" + local_json_escape(sev) + "\",";
             jsonLog += "\"application\":\"" + local_json_escape(app_name) + "\",";
-            jsonLog += "\"message\":\"" + local_json_escape(msg) + "\",";
-            jsonLog += "\"source\":\"UDP\""; 
+            jsonLog += "\"message\":\"" + local_json_escape(msg) + "\""; 
             jsonLog += "}";
 
             broadcast_to_dashboards(jsonLog);
@@ -94,10 +102,8 @@ int main() {
 
     int on = 1;
     setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-
     bzero(&server, sizeof(server));
     bzero(&from, sizeof(from));
-
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(PORT);
@@ -106,7 +112,6 @@ int main() {
         perror("[server] Error at bind().\n");
         return errno;
     }
-
     if (listen(sd, 2) == -1) {
         perror("[server] Error at listen().\n");
         return errno;

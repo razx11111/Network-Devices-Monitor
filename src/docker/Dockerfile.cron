@@ -1,13 +1,8 @@
 FROM alpine:latest
 
-# Install logger (util-linux) and standard tools
 RUN apk add --no-cache util-linux openrc
 
-# Setup Crontab
 COPY crontab /var/spool/cron/crontabs/root
 
-# Start syslogd (forwarding to monitor) AND crond (background scheduler)
-# -f: Foreground (so container doesn't exit)
-# -d 8: Log level
 CMD syslogd -n -O /dev/stdout -R monitor-server:514 & \
     crond -f -d 8

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-using SyslogHandler = std::function<void(string, string, string, string, string, string)>;
+using SyslogHandler = function<void(string, string, string, string, string, string)>;
 
 class UDPSyslogServer {
 private:
@@ -24,7 +24,7 @@ public:
     void stop();
     
 private:
-    void parse_syslog(const std::string& raw_message, std::string& source_ip);
+    void parse_syslog(const string& raw_message, string& source_ip);
 };
 
 #endif

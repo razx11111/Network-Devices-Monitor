@@ -1,8 +1,8 @@
 services:
   monitor-server:
     build:
-      context: ..              # Context is 'src/'
-      dockerfile: docker/Dockerfile  # Point to file inside 'src/docker/'
+      context: ..              
+      dockerfile: docker/Dockerfile  
     container_name: monitor-server
     ports:
       - "9999:9999"
@@ -15,31 +15,26 @@ services:
     depends_on:
       - monitor-server
 
-  # --- TCP AGENT ---
   agent-01:
     build:
-      context: ..              # Context is 'src/'
-      dockerfile: docker/Dockerfile  # Point to file inside 'src/docker/'
+      context: ..             
+      dockerfile: docker/Dockerfile  
     depends_on:
       - monitor-server
     command: ["./build/tcp_client", "monitor-server"]
     stdin_open: true
     tty: true
 
-    # ... existing services ...
-
-  # 4. REAL Nginx Server (No scripts, actual software)
   device-nginx-real:
     image: nginx:alpine
     container_name: device-nginx-real
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro # Mount our custom config
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro 
     depends_on:
       - monitor-server
     ports:
-      - "8080:80" # Expose to your laptop so you can curl it
+      - "8080:80" 
 
-  # 2. HAProxy Load Balancer (NEW - Auto Alerts)
   device-haproxy-lb:
     image: haproxy:alpine
     container_name: device-haproxy-lb
@@ -48,7 +43,6 @@ services:
     depends_on:
       - monitor-server
 
-  # 3. System Scheduler (NEW - Auto Info/Warn/Err)
   device-scheduler:
     build:
       context: .

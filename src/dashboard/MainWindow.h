@@ -9,9 +9,8 @@
 #include <QLineEdit>      
 #include <QPushButton>    
 #include <QComboBox>
-#include <QVBoxLayout> // Added missing include
-#include <QGroupBox>
-#include <QGridLayout>
+#include <QGroupBox>      
+#include <QVBoxLayout>
 
 #include "protocol.h"
 
@@ -19,7 +18,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(QString user, QString pass, QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -28,23 +27,33 @@ private slots:
     void onDisconnected();    
     void onReadyRead();
     void onSocketError(QAbstractSocket::SocketError socketError);
+    
     void sendSearchRequest();
-    void requestStats(); // New slot to ask for stats
+    void requestStats();
+    void requestAgents(); 
+    
+    void onActivateAgent();
+    void onBlockAgent();
+    void onAddAgent();
 
 private:
     void setupUI();
+    void applyModernStyle(); // <--- Adauga asta
     void processJson(const QByteArray &data);
-    
     void addLogEntry(const QString &ts, const QString &src, const QString &pid, 
                      const QString &fac, const QString &sev, const QString &app, const QString &msg);
 
     QTcpSocket *socket;
     QTimer *reconnectTimer;   
-    QTableWidget *logTable;
-    QLabel *statusLabel;
+    QTimer *statsTimer;
+    QTimer *agentsTimer; 
+
+    QString m_username;
+    QString m_password;
     QByteArray buffer;
-    
-    // UI Elements
+
+    QLabel *statusLabel;
+    QTableWidget *logTable;
     QLineEdit *searchBar;
     QComboBox *severityFilter;
     QPushButton *searchButton;
@@ -52,6 +61,12 @@ private:
     QLabel *lblInfoCount;
     QLabel *lblWarnCount;
     QLabel *lblErrCount;
+    QTableWidget *topSourcesTable; 
+    
+    QTableWidget *agentTable;
+    QPushButton *btnActivate;
+    QPushButton *btnBlock;
+    QPushButton *btnAddAgent;
 };
 
-#endif
+#endif 
